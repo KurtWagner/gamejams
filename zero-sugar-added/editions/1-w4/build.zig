@@ -1,15 +1,33 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) !void {
+    const target = b.resolveTargetQuery(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .freestanding,
+    });
+
+    const game = b.createModule(.{
+        .root_source_file = b.path("src/lib/main.zig"),
+        .target = target,
+        .imports = &.{.{
+            .name = "w4",
+            .module = b.createModule(.{
+                .root_source_file = b.path("src/wasm4.zig"),
+                .target = target,
+            }),
+        }},
+    });
+
     const exe = b.addExecutable(.{
         .name = "cart",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = b.resolveTargetQuery(.{
-                .cpu_arch = .wasm32,
-                .os_tag = .freestanding,
-            }),
+            .root_source_file = b.path("src/exe/main.zig"),
+            .target = target,
             .optimize = .ReleaseSmall,
+            .imports = &.{.{
+                .name = "game",
+                .module = game,
+            }},
         }),
     });
 

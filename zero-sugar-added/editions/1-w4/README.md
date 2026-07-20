@@ -2,4 +2,8 @@
 
 > Full steam ahead!
 
-Using zig and w4.
+Using zig and w4. Run with:
+
+```shell
+zig build run
+```
