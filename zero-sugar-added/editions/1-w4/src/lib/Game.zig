@@ -3,6 +3,8 @@ const Game = @This();
 // TODO: Dont repeat this everywhere
 const tile_size = 16;
 
+const diag_multiplier: @Vector(2, f16) = @splat(0.7);
+
 state: State,
 input: Input,
 level: Level,
@@ -38,18 +40,22 @@ fn update(game: *Game) void {
         },
         .running => {
             // TODO:  Fix diagonal speed
-            var velocity: @Vector(2, i8) = .{ 0, 0 };
+            var velocity: @Vector(2, f16) = .{ 0, 0 };
             if (game.input.down.button_left) {
-                velocity[0] -= 1;
+                velocity[0] -= 0.2;
             } else if (game.input.down.button_right) {
-                velocity[0] += 1;
+                velocity[0] += 0.2;
             }
             if (game.input.down.button_up) {
-                velocity[1] -= 1;
+                velocity[1] -= 0.2;
             } else if (game.input.down.button_down) {
-                velocity[1] += 1;
+                velocity[1] += 0.2;
             }
-            const new_xy = game.player.xy + velocity;
+
+            if (velocity[0] != 0 and velocity[1] != 0)
+                velocity *= diag_multiplier;
+
+            const new_xy = game.player.xy + (velocity * game.player.speed);
             // TODO: Check collision
             game.player.xy = new_xy;
 
