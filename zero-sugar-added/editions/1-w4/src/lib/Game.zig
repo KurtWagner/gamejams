@@ -55,9 +55,12 @@ fn update(game: *Game) void {
             if (velocity[0] != 0 and velocity[1] != 0)
                 velocity *= diag_multiplier;
 
-            const new_xy = game.player.xy + (velocity * game.player.speed);
-            // TODO: Check collision
-            game.player.xy = new_xy;
+            const current = game.player.xy;
+
+            game.player.xy += (velocity * game.player.speed);
+            if (game.level.isCollision(game.player)) {
+                game.player.xy = current;
+            }
 
             if (game.input.pressed.button_1) {
                 game.state = .menu;
