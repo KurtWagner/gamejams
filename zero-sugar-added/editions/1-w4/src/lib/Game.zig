@@ -2,11 +2,13 @@ const Game = @This();
 
 state: State,
 input: Input,
+level: Level,
 
 pub fn init(game: *Game) void {
     game.* = .{
         .state = .menu,
         .input = .empty,
+        .level = levels.level_1,
     };
 }
 
@@ -37,7 +39,7 @@ fn draw(game: *const Game) void {
             w4.text("Menu", 10, 10);
         },
         .running => {
-            w4.text("Running", 10, 10);
+            game.level.draw();
         },
     }
 }
@@ -49,3 +51,5 @@ const State = enum {
 
 const w4 = @import("w4");
 const Input = @import("Input.zig");
+const levels = @import("levels.zig");
+const Level = @import("Level.zig");
