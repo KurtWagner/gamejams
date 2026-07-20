@@ -1,14 +1,19 @@
 const Game = @This();
 
+// TODO: Dont repeat this everywhere
+const tile_size = 16;
+
 state: State,
 input: Input,
 level: Level,
+player: Player,
 
 pub fn init(game: *Game) void {
     game.* = .{
         .state = .menu,
         .input = .empty,
         .level = levels.level_1,
+        .player = .empty,
     };
 }
 
@@ -23,9 +28,31 @@ fn update(game: *Game) void {
         .menu => {
             if (game.input.pressed.button_1) {
                 game.state = .running;
+
+                game.level = levels.level_1;
+                game.player.xy = .{
+                    game.level.start_col * tile_size,
+                    game.level.start_row * tile_size,
+                };
             }
         },
         .running => {
+            // TODO:  Fix diagonal speed
+            var velocity: @Vector(2, i8) = .{ 0, 0 };
+            if (game.input.down.button_left) {
+                velocity[0] -= 1;
+            } else if (game.input.down.button_right) {
+                velocity[0] += 1;
+            }
+            if (game.input.down.button_up) {
+                velocity[1] -= 1;
+            } else if (game.input.down.button_down) {
+                velocity[1] += 1;
+            }
+            const new_xy = game.player.xy + velocity;
+            // TODO: Check collision
+            game.player.xy = new_xy;
+
             if (game.input.pressed.button_1) {
                 game.state = .menu;
             }
@@ -40,6 +67,7 @@ fn draw(game: *const Game) void {
         },
         .running => {
             game.level.draw();
+            game.player.draw();
         },
     }
 }
@@ -53,3 +81,4 @@ const w4 = @import("w4");
 const Input = @import("Input.zig");
 const levels = @import("levels.zig");
 const Level = @import("Level.zig");
+const Player = @import("Player.zig");
