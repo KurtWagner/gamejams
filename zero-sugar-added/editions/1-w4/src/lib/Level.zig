@@ -4,7 +4,7 @@ const Level = @This();
 const tile_size = 16;
 const tile_size_vec2: @Vector(2, f16) = @splat(tile_size);
 
-const TileKind = enum {
+const TileKind = union(enum) {
     wall,
     clean,
     dirty_light,
@@ -57,16 +57,45 @@ pub fn draw(level: Level) void {
         var col: u8 = 0;
         while (col < 10) : (col += 1) {
             switch (level.tiles[col][row]) {
-                .wall => w4.rect(
-                    col * tile_size,
-                    row * tile_size,
-                    tile_size,
-                    tile_size,
+                .wall => drawTile(
+                    .{ .col = 0, .row = 3 },
+                    .{ .col = col, .row = row },
                 ),
-                else => {}, // TODO: Others
+                .dirty_light => drawTile(
+                    .{ .col = 0, .row = 0 },
+                    .{ .col = col, .row = row },
+                ),
+                .dirty_medium => drawTile(
+                    .{ .col = 0, .row = 1 },
+                    .{ .col = col, .row = row },
+                ),
+                .dirty_hectic => drawTile(
+                    .{ .col = 0, .row = 2 },
+                    .{ .col = col, .row = row },
+                ),
+                else => {},
             }
         }
     }
+}
+
+const TilePos = struct {
+    col: u8,
+    row: u8,
+};
+
+fn drawTile(src: TilePos, dest: TilePos) void {
+    w4.blitSub(
+        &assets.tiles,
+        dest.col * tile_size,
+        dest.row * tile_size,
+        tile_size,
+        tile_size,
+        src.col * tile_size,
+        src.row * tile_size,
+        assets.tiles_width,
+        .{ .format = .bpp_2 },
+    );
 }
 
 pub fn isCollision(level: Level, player: Player) bool {
@@ -99,3 +128,4 @@ pub fn isCollision(level: Level, player: Player) bool {
 const std = @import("std");
 const w4 = @import("w4");
 const Player = @import("Player.zig");
+const assets = @import("assets");

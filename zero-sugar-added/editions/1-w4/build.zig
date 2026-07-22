@@ -14,6 +14,7 @@ pub fn build(b: *std.Build) !void {
     build_assets.addFileArg(b.path("assets/banner.png"));
     build_assets.addFileArg(b.path("assets/landing_bg.png"));
     build_assets.addFileArg(b.path("assets/landing_cleaner.png"));
+    build_assets.addFileArg(b.path("assets/tiles.png"));
     build_assets.addArg("-o");
     const assets_file = build_assets.addOutputFileArg("assets.zig");
 

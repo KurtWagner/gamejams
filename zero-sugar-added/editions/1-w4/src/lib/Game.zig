@@ -29,6 +29,13 @@ pub fn init(game: *Game) void {
         w4.Color.fromInt(0x306850),
         w4.Color.fromInt(0x071821),
     };
+
+    w4.draw.* = .{
+        .color_1 = .palette_1,
+        .color_2 = .palette_2,
+        .color_3 = .palette_3,
+        .color_4 = .palette_4,
+    };
 }
 
 pub fn tick(game: *Game) void {
@@ -149,12 +156,6 @@ fn playMenuMusic(game: *const Game) void {
 fn draw(game: *const Game) void {
     switch (game.state) {
         .menu => {
-            w4.draw.* = .{
-                .color_1 = .palette_1,
-                .color_2 = .palette_2,
-                .color_3 = .palette_3,
-                .color_4 = .palette_4,
-            };
             w4.blit(
                 &assets.landing_bg,
                 0,
