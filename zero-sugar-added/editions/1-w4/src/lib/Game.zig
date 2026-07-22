@@ -17,6 +17,13 @@ pub fn init(game: *Game) void {
         .level = levels.level_1,
         .player = .empty,
     };
+
+    w4.palette.* = .{
+        w4.Color.fromInt(0xe0f8cf),
+        w4.Color.fromInt(0x86c06c),
+        w4.Color.fromInt(0x306850),
+        w4.Color.fromInt(0x071821),
+    };
 }
 
 pub fn tick(game: *Game) void {
@@ -72,7 +79,20 @@ fn update(game: *Game) void {
 fn draw(game: *const Game) void {
     switch (game.state) {
         .menu => {
-            w4.text("Menu", 10, 10);
+            w4.draw.* = .{
+                .color_1 = .palette_1,
+                .color_2 = .palette_2,
+                .color_3 = .palette_3,
+                .color_4 = .palette_4,
+            };
+            w4.blit(
+                &assets.landing,
+                0,
+                0,
+                assets.landing_width,
+                assets.landing_height,
+                .{ .format = .bpp_2 },
+            );
         },
         .running => {
             game.level.draw();
@@ -91,3 +111,4 @@ const Input = @import("Input.zig");
 const levels = @import("levels.zig");
 const Level = @import("Level.zig");
 const Player = @import("Player.zig");
+const assets = @import("assets");
