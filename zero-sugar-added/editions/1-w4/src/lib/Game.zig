@@ -62,7 +62,7 @@ fn update(game: *Game) void {
             if (game.frame % 60 == 0)
                 game.menu_cleaner_x_offset +%= 1;
 
-            if (game.menu_banner_y < 0 and game.frame % 2 == 0)
+            if (game.menu_banner_y < 10 and game.frame % 2 == 0)
                 game.menu_banner_y += 1;
         },
         .running => {
