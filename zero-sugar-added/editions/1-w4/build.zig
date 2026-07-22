@@ -11,7 +11,9 @@ pub fn build(b: *std.Build) !void {
     });
 
     const build_assets = b.addSystemCommand(&.{ w4, "png2src", "--zig" });
-    build_assets.addFileArg(b.path("assets/landing.png"));
+    build_assets.addFileArg(b.path("assets/banner.png"));
+    build_assets.addFileArg(b.path("assets/landing_bg.png"));
+    build_assets.addFileArg(b.path("assets/landing_cleaner.png"));
     build_assets.addArg("-o");
     const assets_file = build_assets.addOutputFileArg("assets.zig");
 
