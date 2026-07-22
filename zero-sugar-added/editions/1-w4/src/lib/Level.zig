@@ -4,12 +4,30 @@ const Level = @This();
 const tile_size = 16;
 const tile_size_vec2: @Vector(2, f16) = @splat(tile_size);
 
-const TileKind = union(enum) {
+const TileKind = enum {
+    none,
+    back_wall,
     wall,
     clean,
     dirty_light,
     dirty_medium,
     dirty_hectic,
+
+    fn isWall(self: @This()) bool {
+        return switch (self) {
+            .none => false,
+            .wall, .back_wall => true,
+            .clean, .dirty_light, .dirty_medium, .dirty_hectic => false,
+        };
+    }
+
+    fn isFloor(self: @This()) bool {
+        return switch (self) {
+            .none => false,
+            .wall, .back_wall => false,
+            .clean, .dirty_light, .dirty_medium, .dirty_hectic => true,
+        };
+    }
 };
 
 start_col: u8,
@@ -30,6 +48,7 @@ pub fn parse(comptime bytes: []const u8) Level {
         const start = row * 11;
         for (bytes[start .. start + 10], 0..) |c, col| {
             switch (c) {
+                '-' => level.tiles[col][row] = .back_wall,
                 '|' => level.tiles[col][row] = .wall,
                 '0' => level.tiles[col][row] = .clean,
                 '1' => level.tiles[col][row] = .dirty_light,
@@ -56,33 +75,104 @@ pub fn draw(level: Level) void {
     while (row < level.tiles.len) : (row += 1) {
         var col: u8 = 0;
         while (col < 10) : (col += 1) {
-            switch (level.tiles[col][row]) {
+            const pos: TilePos = .{ .col = col, .row = row };
+            const kind = level.tiles[col][row];
+            switch (kind) {
+                .back_wall => drawTile(
+                    .{ .col = 1, .row = 3 },
+                    pos,
+                ),
                 .wall => drawTile(
                     .{ .col = 0, .row = 3 },
-                    .{ .col = col, .row = row },
+                    pos,
                 ),
                 .dirty_light => drawTile(
                     .{ .col = 0, .row = 0 },
-                    .{ .col = col, .row = row },
+                    pos,
                 ),
                 .dirty_medium => drawTile(
                     .{ .col = 0, .row = 1 },
-                    .{ .col = col, .row = row },
+                    pos,
                 ),
                 .dirty_hectic => drawTile(
                     .{ .col = 0, .row = 2 },
-                    .{ .col = col, .row = row },
+                    pos,
                 ),
                 else => {},
+            }
+
+            if (kind.isFloor()) {
+                if (level.tileToLeft(pos).isWall()) {
+                    const x, const y = pos.toXy();
+                    drawSlice(
+                        SliceWallEdge,
+                        .{ .x = x - SliceWallEdge.w, .y = y },
+                    );
+                }
             }
         }
     }
 }
 
+fn tileToLeft(level: Level, src: TilePos) TileKind {
+    if (src.col == 0) return .none;
+    return level.tiles[src.col - 1][src.row];
+}
+
+fn tileToRight(level: Level, src: TilePos) TileKind {
+    if (src.col == level.tiles.len - 1) return .none;
+    return level.tiles[src.col + 1][src.row];
+}
+
+fn tileToBottom(level: Level, src: TilePos) TileKind {
+    if (src.row == level.tiles[0].len - 1) return .none;
+    return level.tiles[src.col][src.row + 1];
+}
+
+fn tileToTop(level: Level, src: TilePos) TileKind {
+    if (src.row == 0) return .none;
+    return level.tiles[src.col][src.row - 1];
+}
+
 const TilePos = struct {
     col: u8,
     row: u8,
+
+    fn toXy(self: TilePos) struct { u8, u8 } {
+        return .{
+            self.col * tile_size,
+            self.row * tile_size,
+        };
+    }
 };
+
+const Slice = struct {
+    x: u8,
+    y: u8,
+    w: u8,
+    h: u8,
+};
+
+const SliceWallEdge: Slice = .{
+    .x = 40,
+    .y = 48,
+    .w = 4,
+    .h = 16,
+};
+
+fn drawSlice(slice: Slice, dest: struct { x: i32, y: i32 }) void {
+    w4.blitSub(
+        &assets.tiles,
+        dest.x,
+        dest.y,
+        slice.w,
+        slice.h,
+        slice.x,
+        slice.y,
+        assets.tiles_width,
+        .{ .format = .bpp_2 },
+    );
+}
 
 fn drawTile(src: TilePos, dest: TilePos) void {
     w4.blitSub(
@@ -107,7 +197,7 @@ pub fn isCollision(level: Level, player: Player) bool {
     while (row < level.tiles.len) : (row += 1) {
         var col: u8 = 0;
         while (col < 10) : (col += 1) {
-            if (level.tiles[col][row] == .wall) {
+            if (level.tiles[col][row].isWall()) {
                 const tile_top_left: @Vector(2, f16) = .{
                     col * tile_size,
                     row * tile_size,
