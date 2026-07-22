@@ -4,14 +4,22 @@ const Level = @This();
 const tile_size = 16;
 const tile_size_vec2: @Vector(2, f16) = @splat(tile_size);
 
+const TileKind = enum {
+    wall,
+    clean,
+    dirty_light,
+    dirty_medium,
+    dirty_hectic,
+};
+
 start_col: u8,
 start_row: u8,
-rows: [10]std.bit_set.Integer(10),
+tiles: [10][10]TileKind,
 
 pub const empty: Level = .{
     .start_col = 0,
     .start_row = 0,
-    .rows = @splat(.empty),
+    .tiles = @splat(@splat(.wall)),
 };
 
 pub fn parse(comptime bytes: []const u8) Level {
@@ -22,12 +30,13 @@ pub fn parse(comptime bytes: []const u8) Level {
         const start = row * 11;
         for (bytes[start .. start + 10], 0..) |c, col| {
             switch (c) {
-                '|' => {},
-                '0' => {
-                    level.rows[row].set(col);
-                },
-                '1' => {
-                    level.rows[row].set(col);
+                '|' => level.tiles[col][row] = .wall,
+                '0' => level.tiles[col][row] = .clean,
+                '1' => level.tiles[col][row] = .dirty_light,
+                '2' => level.tiles[col][row] = .dirty_medium,
+                '3' => level.tiles[col][row] = .dirty_hectic,
+                'x' => {
+                    level.tiles[col][row] = .clean;
                     level.start_col = @intCast(col);
                     level.start_row = @intCast(row);
                     has_start = true;
@@ -44,17 +53,17 @@ pub fn parse(comptime bytes: []const u8) Level {
 
 pub fn draw(level: Level) void {
     var row: u8 = 0;
-    while (row < level.rows.len) : (row += 1) {
-        const cols = level.rows[row];
+    while (row < level.tiles.len) : (row += 1) {
         var col: u8 = 0;
         while (col < 10) : (col += 1) {
-            if (!cols.isSet(col)) {
-                w4.rect(
+            switch (level.tiles[col][row]) {
+                .wall => w4.rect(
                     col * tile_size,
                     row * tile_size,
                     tile_size,
                     tile_size,
-                );
+                ),
+                else => {}, // TODO: Others
             }
         }
     }
@@ -66,11 +75,10 @@ pub fn isCollision(level: Level, player: Player) bool {
 
     // TODO: Just check surrounding tiles
     var row: u8 = 0;
-    while (row < level.rows.len) : (row += 1) {
-        const cols = level.rows[row];
+    while (row < level.tiles.len) : (row += 1) {
         var col: u8 = 0;
         while (col < 10) : (col += 1) {
-            if (!cols.isSet(col)) {
+            if (level.tiles[col][row] == .wall) {
                 const tile_top_left: @Vector(2, f16) = .{
                     col * tile_size,
                     row * tile_size,
