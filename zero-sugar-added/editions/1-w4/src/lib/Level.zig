@@ -79,14 +79,19 @@ pub fn parse(comptime bytes: []const u8) Level {
     if (!has_start)
         @compileError("Level missing start");
 
-    // TODO: Make iterator for this? Duplicated in draw
+    // TODO: Make iterator for this? Duplicated in draw or who really caresfor a jam.
     row = 0;
     while (row < level.tiles.len) : (row += 1) {
         var col: u8 = 0;
         while (col < 10) : (col += 1) {
-            const pos: TilePos = .{ .col = col, .row = row };
-            _ = pos;
-            // TODO: poopulate vertices
+            const kind = level.tiles[col][row];
+
+            if (kind.isFloor()) {
+                level.vertices[col][row].bottom_right = true;
+                level.vertices[col + 1][row].bottom_left = true;
+                level.vertices[col][row + 1].top_right = true;
+                level.vertices[col + 1][row + 1].top_left = true;
+            }
         }
     }
 
