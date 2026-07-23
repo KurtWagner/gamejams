@@ -7,7 +7,7 @@ const diag_multiplier: @Vector(2, f16) = @splat(0.7);
 
 state: State,
 input: Input,
-level: Level,
+level: LevelIndex,
 player: Player,
 frame: u16,
 
@@ -18,7 +18,7 @@ pub fn init(game: *Game) void {
     game.* = .{
         .state = .reset,
         .input = .empty,
-        .level = levels.level_1,
+        .level = 0,
         .player = .empty,
         .frame = 0,
     };
@@ -59,10 +59,10 @@ fn update(game: *Game) void {
             if (game.input.pressed.button_1) {
                 game.state = .running;
 
-                game.level = levels.level_1;
+                game.level = 0;
                 game.player.xy = .{
-                    game.level.start_col * tile_size,
-                    game.level.start_row * tile_size,
+                    levels.all[game.level].start_col * tile_size,
+                    levels.all[game.level].start_row * tile_size,
                 };
             }
 
@@ -92,7 +92,7 @@ fn update(game: *Game) void {
             const current = game.player.xy;
 
             game.player.xy += (velocity * game.player.speed);
-            if (game.level.isCollision(game.player)) {
+            if (levels.all[game.level].isCollision(game.player)) {
                 game.player.xy = current;
             }
 
@@ -185,7 +185,7 @@ fn draw(game: *const Game) void {
             );
         },
         .running => {
-            game.level.draw();
+            levels.all[game.level].draw();
             game.player.draw();
         },
         .reset => {},
@@ -201,6 +201,7 @@ const State = enum {
 const w4 = @import("w4");
 const Input = @import("Input.zig");
 const levels = @import("levels.zig");
+const LevelIndex = levels.LevelIndex;
 const Level = @import("Level.zig");
 const Player = @import("Player.zig");
 const assets = @import("assets");
