@@ -4,6 +4,16 @@ const Level = @This();
 const tile_size = 16;
 const tile_size_vec2: @Vector(2, f16) = @splat(tile_size);
 
+/// Indicates wheter there's floor (true) or wall (false) in each quadrant from vertex
+const Vertex = struct {
+    top_left: bool = false,
+    top_right: bool = false,
+    bottom_left: bool = false,
+    bottom_right: bool = false,
+
+    const none: Vertex = .{};
+};
+
 const TileKind = enum {
     none,
     back_wall,
@@ -33,11 +43,13 @@ const TileKind = enum {
 start_col: u8,
 start_row: u8,
 tiles: [10][10]TileKind,
+vertices: [11][11]Vertex,
 
 pub const empty: Level = .{
     .start_col = 0,
     .start_row = 0,
     .tiles = @splat(@splat(.wall)),
+    .vertices = @splat(@splat(.none)),
 };
 
 pub fn parse(comptime bytes: []const u8) Level {
@@ -67,6 +79,17 @@ pub fn parse(comptime bytes: []const u8) Level {
     if (!has_start)
         @compileError("Level missing start");
 
+    // TODO: Make iterator for this? Duplicated in draw
+    row = 0;
+    while (row < level.tiles.len) : (row += 1) {
+        var col: u8 = 0;
+        while (col < 10) : (col += 1) {
+            const pos: TilePos = .{ .col = col, .row = row };
+            _ = pos;
+            // TODO: poopulate vertices
+        }
+    }
+
     return level;
 }
 
@@ -78,10 +101,12 @@ pub fn draw(level: Level) void {
             const pos: TilePos = .{ .col = col, .row = row };
             const kind = level.tiles[col][row];
             switch (kind) {
-                .back_wall => drawTile(
-                    .{ .col = 1, .row = 3 },
-                    pos,
-                ),
+                .back_wall => {
+                    drawTile(
+                        .{ .col = 1, .row = 3 },
+                        pos,
+                    );
+                },
                 .wall => drawTile(
                     .{ .col = 0, .row = 3 },
                     pos,
@@ -101,12 +126,35 @@ pub fn draw(level: Level) void {
                 else => {},
             }
 
-            if (kind.isFloor()) {
-                if (level.tileToLeft(pos).isWall()) {
-                    const x, const y = pos.toXy();
+            if (kind.isWall()) {
+                const x, const y = pos.toXy();
+
+                const right = level.tileToRight(pos);
+                const left = level.tileToLeft(pos);
+                const top = level.tileToTop(pos);
+
+                if (left.isFloor() or (left == .back_wall and kind == .wall)) {
                     drawSlice(
                         SliceWallEdge,
-                        .{ .x = x - SliceWallEdge.w, .y = y },
+                        .{ .x = x, .y = y },
+                        .{
+                            .flip_x = true,
+                        },
+                    );
+                }
+                if (right.isFloor() or (right == .back_wall and kind == .wall)) {
+                    drawSlice(
+                        SliceWallEdge,
+                        .{ .x = x + tile_size - SliceWallEdge.w, .y = y },
+                        .{},
+                    );
+                }
+
+                if (top.isFloor()) {
+                    drawSlice(
+                        SliceWallTopEdge,
+                        .{ .x = x, .y = y },
+                        .{},
                     );
                 }
             }
@@ -160,7 +208,18 @@ const SliceWallEdge: Slice = .{
     .h = 16,
 };
 
-fn drawSlice(slice: Slice, dest: struct { x: i32, y: i32 }) void {
+const SliceWallTopEdge: Slice = .{
+    .x = 48,
+    .y = 48,
+    .w = 16,
+    .h = 3,
+};
+
+const DrawSliceOptions = struct {
+    flip_x: bool = false,
+};
+
+fn drawSlice(slice: Slice, dest: struct { x: i32, y: i32 }, options: DrawSliceOptions) void {
     w4.blitSub(
         &assets.tiles,
         dest.x,
@@ -170,7 +229,10 @@ fn drawSlice(slice: Slice, dest: struct { x: i32, y: i32 }) void {
         slice.x,
         slice.y,
         assets.tiles_width,
-        .{ .format = .bpp_2 },
+        .{
+            .format = .bpp_2,
+            .flip_x = options.flip_x,
+        },
     );
 }
 
