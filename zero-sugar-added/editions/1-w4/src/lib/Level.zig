@@ -19,6 +19,18 @@ const Vertex = packed struct(u4) {
     const top_left_only: Vertex = .{
         .top_left = true,
     };
+    const bottom_right_wall_only: Vertex = .{
+        .top_left = true,
+        .top_right = true,
+        .bottom_left = true,
+        .bottom_right = false,
+    };
+    const bottom_left_wall_only: Vertex = .{
+        .top_left = true,
+        .top_right = true,
+        .bottom_left = false,
+        .bottom_right = true,
+    };
 };
 
 const TileKind = enum {
@@ -189,6 +201,16 @@ pub fn draw(level: Level) void {
                     .{ .x = x * tile_size, .y = y * tile_size - 1 },
                     .{ .rotate = true },
                 ),
+                Vertex.bottom_right_wall_only => drawSlice(
+                    SliceWallCorner,
+                    .{ .x = x * tile_size + 1, .y = y * tile_size },
+                    .{ .flip_y = true },
+                ),
+                Vertex.bottom_left_wall_only => drawSlice(
+                    SliceWallCorner,
+                    .{ .x = x * tile_size - SliceWallCorner.w - 1, .y = y * tile_size },
+                    .{ .rotate = true, .flip_x = true },
+                ),
                 else => {},
             }
         }
@@ -258,6 +280,7 @@ const SliceWallCorner: Slice = .{
 const DrawSliceOptions = struct {
     flip_x: bool = false,
     rotate: bool = false,
+    flip_y: bool = false,
 };
 
 fn drawSlice(slice: Slice, dest: struct { x: i32, y: i32 }, options: DrawSliceOptions) void {
@@ -274,6 +297,7 @@ fn drawSlice(slice: Slice, dest: struct { x: i32, y: i32 }, options: DrawSliceOp
             .format = .bpp_2,
             .flip_x = options.flip_x,
             .rotate = options.rotate,
+            .flip_y = options.flip_y,
         },
     );
 }
