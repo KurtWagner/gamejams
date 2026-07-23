@@ -5,13 +5,20 @@ const tile_size = 16;
 const tile_size_vec2: @Vector(2, f16) = @splat(tile_size);
 
 /// Indicates wheter there's floor (true) or wall (false) in each quadrant from vertex
-const Vertex = struct {
+const Vertex = packed struct(u4) {
     top_left: bool = false,
     top_right: bool = false,
     bottom_left: bool = false,
     bottom_right: bool = false,
 
     const none: Vertex = .{};
+
+    const top_right_only: Vertex = .{
+        .top_right = true,
+    };
+    const top_left_only: Vertex = .{
+        .top_left = true,
+    };
 };
 
 const TileKind = enum {
@@ -165,6 +172,27 @@ pub fn draw(level: Level) void {
             }
         }
     }
+
+    var x: u8 = 0;
+    while (x < level.vertices.len) : (x += 1) {
+        var y: u8 = 0;
+        while (y < level.vertices[x].len) : (y += 1) {
+            const vertex = level.vertices[x][y];
+            switch (vertex) {
+                Vertex.top_right_only => drawSlice(
+                    SliceWallCorner,
+                    .{ .x = x * tile_size - SliceWallCorner.w, .y = y * tile_size - 1 },
+                    .{},
+                ),
+                Vertex.top_left_only => drawSlice(
+                    SliceWallCorner,
+                    .{ .x = x * tile_size, .y = y * tile_size - 1 },
+                    .{ .rotate = true },
+                ),
+                else => {},
+            }
+        }
+    }
 }
 
 fn tileToLeft(level: Level, src: TilePos) TileKind {
@@ -220,8 +248,16 @@ const SliceWallTopEdge: Slice = .{
     .h = 3,
 };
 
+const SliceWallCorner: Slice = .{
+    .x = 44,
+    .y = 48,
+    .w = 4,
+    .h = 4,
+};
+
 const DrawSliceOptions = struct {
     flip_x: bool = false,
+    rotate: bool = false,
 };
 
 fn drawSlice(slice: Slice, dest: struct { x: i32, y: i32 }, options: DrawSliceOptions) void {
@@ -237,6 +273,7 @@ fn drawSlice(slice: Slice, dest: struct { x: i32, y: i32 }, options: DrawSliceOp
         .{
             .format = .bpp_2,
             .flip_x = options.flip_x,
+            .rotate = options.rotate,
         },
     );
 }
