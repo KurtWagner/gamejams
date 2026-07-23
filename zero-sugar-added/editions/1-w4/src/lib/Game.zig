@@ -187,6 +187,17 @@ fn draw(game: *const Game) void {
         .running => {
             levels.all[game.level].draw();
             game.player.draw();
+
+            var level_text: [10]u8 = undefined;
+            const text = std.fmt.bufPrint(
+                &level_text,
+                "Level {d}",
+                .{game.level + 1},
+            ) catch unreachable;
+
+            w4.draw.color_2 = .palette_4;
+            defer w4.draw.color_2 = .palette_2;
+            w4.text(text, 50, 4);
         },
         .reset => {},
     }
@@ -205,3 +216,4 @@ const LevelIndex = levels.LevelIndex;
 const Level = @import("Level.zig");
 const Player = @import("Player.zig");
 const assets = @import("assets");
+const std = @import("std");
