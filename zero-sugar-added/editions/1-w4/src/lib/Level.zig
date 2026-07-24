@@ -64,6 +64,11 @@ vertices: [grid_size + 1][grid_size + 1]Vertex,
 light_dirt: Dirt,
 medium_dirt: Dirt,
 hectic_dirt: Dirt,
+prev_single_tile_collision: TilePos = .{
+    // Setting to a pos we should never put player in anyway, avoids optional
+    .col = 0,
+    .row = 0,
+},
 
 pub const empty: Level = .{
     .start_col = 0,
@@ -301,7 +306,7 @@ fn tileToTop(level: Level, src: TilePos) TileKind {
     return level.tiles[src.col][src.row - 1];
 }
 
-const TilePos = struct {
+const TilePos = packed struct(u16) {
     col: u8,
     row: u8,
 
@@ -385,11 +390,11 @@ pub const CollisionKind = union(enum) {
     none: void,
     /// Player is colliding with a wall so should not be able to move
     wall: void,
-    /// Player is within one single floor tile. e.g., should clean the tile
-    single_floor_tile: TilePos,
+    /// Player has entered one single floor tile. e.g., should clean the tile
+    enter_floor_tile: TilePos,
 };
 
-pub fn getCollision(level: Level, player: Player) CollisionKind {
+pub fn getCollision(level: *Level, player: Player) CollisionKind {
     const player_top_left = player.xy;
     const player_bottom_right: @Vector(2, f16) = player.xy + player.size;
 
@@ -419,12 +424,14 @@ pub fn getCollision(level: Level, player: Player) CollisionKind {
     }
 
     if (min_col == max_col and min_row == max_row) {
-        return if (level.tiles[min_row][max_row].isFloor()) .{
-            .single_floor_tile = .{
-                .col = min_col,
-                .row = min_row,
-            },
-        } else .none;
+        const tile: TilePos = .{ .col = min_col, .row = max_row };
+        if (tile == level.prev_single_tile_collision)
+            return .none;
+
+        if (level.tiles[min_row][max_row].isFloor()) {
+            level.prev_single_tile_collision = tile;
+            return .{ .enter_floor_tile = tile };
+        } else return .none;
     }
 
     return .none;

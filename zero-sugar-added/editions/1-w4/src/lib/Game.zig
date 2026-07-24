@@ -100,7 +100,7 @@ fn update(game: *Game) void {
                 // Get back there mate
                 .wall => game.player.xy = current,
                 // Good job cleaning this tile
-                .single_floor_tile => |pos| {
+                .enter_floor_tile => |pos| {
                     if (game.active_level.?.clean(pos)) {
                         // TODO: play clean sound
                     }
