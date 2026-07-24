@@ -37,7 +37,7 @@ const TileKind = enum {
     none,
     back_wall,
     wall,
-    clean,
+    floor,
     dirty_light,
     dirty_medium,
     dirty_hectic,
@@ -46,7 +46,7 @@ const TileKind = enum {
         return switch (self) {
             .none => false,
             .wall, .back_wall => true,
-            .clean, .dirty_light, .dirty_medium, .dirty_hectic => false,
+            .floor, .dirty_light, .dirty_medium, .dirty_hectic => false,
         };
     }
 
@@ -54,7 +54,7 @@ const TileKind = enum {
         return switch (self) {
             .none => false,
             .wall, .back_wall => false,
-            .clean, .dirty_light, .dirty_medium, .dirty_hectic => true,
+            .floor, .dirty_light, .dirty_medium, .dirty_hectic => true,
         };
     }
 };
@@ -64,11 +64,18 @@ start_row: u8,
 tiles: [10][10]TileKind,
 vertices: [11][11]Vertex,
 
+light_dirt: Dirt,
+medium_dirt: Dirt,
+hectic_dirt: Dirt,
+
 pub const empty: Level = .{
     .start_col = 0,
     .start_row = 0,
     .tiles = @splat(@splat(.wall)),
     .vertices = @splat(@splat(.none)),
+    .light_dirt = .all_clean,
+    .medium_dirt = .all_clean,
+    .hectic_dirt = .all_clean,
 };
 
 pub fn parse(comptime bytes: []const u8) Level {
@@ -81,12 +88,21 @@ pub fn parse(comptime bytes: []const u8) Level {
             switch (c) {
                 '-' => level.tiles[col][row] = .back_wall,
                 '|' => level.tiles[col][row] = .wall,
-                '0' => level.tiles[col][row] = .clean,
-                '1' => level.tiles[col][row] = .dirty_light,
-                '2' => level.tiles[col][row] = .dirty_medium,
-                '3' => level.tiles[col][row] = .dirty_hectic,
+                '0' => level.tiles[col][row] = .floor,
+                '1' => {
+                    level.tiles[col][row] = .dirty_light;
+                    level.light_dirt.dirty(.{ .col = col, .row = row });
+                },
+                '2' => {
+                    level.tiles[col][row] = .dirty_medium;
+                    level.medium_dirt.dirty(.{ .col = col, .row = row });
+                },
+                '3' => {
+                    level.tiles[col][row] = .dirty_hectic;
+                    level.hectic_dirt.dirty(.{ .col = col, .row = row });
+                },
                 'x' => {
-                    level.tiles[col][row] = .clean;
+                    level.tiles[col][row] = .floor;
                     level.start_col = @intCast(col);
                     level.start_row = @intCast(row);
                     has_start = true;
@@ -142,7 +158,7 @@ pub fn draw(level: Level) void {
                     drawCleanTile(pos); // Clean under the dirt...
                     drawDirtyTile(pos, kind);
                 },
-                .clean => drawCleanTile(pos),
+                .floor => drawCleanTile(pos),
                 .none => {},
             }
 
@@ -409,6 +425,35 @@ pub fn isCollision(level: Level, player: Player) bool {
     }
     return false;
 }
+
+pub const Dirt = struct {
+    rows: [10]std.bit_set.Integer(10),
+
+    pub const all_clean: Dirt = .{
+        .rows = @splat(.empty),
+    };
+
+    fn remaining(self: Dirt) u8 {
+        var count: u8 = 0;
+        for (self.rows) |row| {
+            count += @intCast(row.count());
+        }
+        return count;
+    }
+
+    /// Marks as dirty
+    fn dirty(self: *Dirt, tile: TilePos) void {
+        self.rows[tile.row].set(tile.col);
+    }
+
+    /// Marks as clean and returns true if was dirty
+    fn clean(self: *Dirt, tile: TilePos) bool {
+        const wasDirty = self.rows[tile.row].isSet(tile.col);
+        if (wasDirty)
+            self.rows[tile.row].unset(tile.col);
+        return wasDirty;
+    }
+};
 
 const std = @import("std");
 const w4 = @import("w4");
