@@ -18,7 +18,7 @@ menu_banner_y: i32 = 0,
 active_level: ?Level = null,
 
 /// Total time completing all levels
-total_time_seconds: u32 = 0,
+total_time_seconds: f32 = 0,
 
 /// Time tracked for the active level
 level_time_seconds: f32 = 0,
@@ -55,7 +55,6 @@ pub fn tick(game: *Game) void {
 fn update(game: *Game) void {
     game.input.update(w4.gamepads[0]);
     game.frame +%= 1;
-    game.level_time_seconds += 1.0 / 60.0;
 
     switch (game.state) {
         .reset => {
@@ -68,14 +67,7 @@ fn update(game: *Game) void {
             game.playMenuMusic();
 
             if (game.input.pressed.button_1) {
-                game.state = .running;
-
-                game.level_index = 0;
-                game.active_level = levels.all[game.level_index];
-                game.player.xy = .{
-                    game.active_level.?.start_col * tile_size,
-                    game.active_level.?.start_row * tile_size,
-                };
+                game.state = .{ .level_start = 0 };
             }
 
             if (game.frame % 60 == 0)
@@ -85,6 +77,8 @@ fn update(game: *Game) void {
                 game.menu_banner_y += 1;
         },
         .running => {
+            game.level_time_seconds += 1.0 / 60.0;
+
             var velocity: @Vector(2, f16) = .{ 0, 0 };
             if (game.input.down.button_left) {
                 velocity[0] -= 0.2;
@@ -127,31 +121,24 @@ fn update(game: *Game) void {
             }
 
             if (game.active_level.?.isComplete()) {
+                game.total_time_seconds += game.level_time_seconds;
                 game.state = .level_complete;
             }
         },
+        .level_start => |level_idx| {
+            game.level_time_seconds = 0;
+            game.level_index = level_idx;
+            game.active_level = levels.all[game.level_index];
+            game.player.xy = .{
+                game.active_level.?.start_col * tile_size,
+                game.active_level.?.start_row * tile_size,
+            };
+            game.state = .running;
+        },
         .level_complete => {
-            var level_text: [18]u8 = undefined;
-            const level = std.fmt.bufPrint(
-                &level_text,
-                "Level {d} completed",
-                .{game.level_index + 1},
-            ) catch unreachable;
-
-            const centiseconds: u32 = @intFromFloat(game.level_time_seconds * 100);
-            var time_text: [22]u8 = undefined;
-            const time = std.fmt.bufPrint(
-                &time_text,
-                "in {d:0>2}:{d:0>2}.{d:0>2} seconds",
-                .{
-                    (centiseconds / 6000) % 100,
-                    (centiseconds / 100) % 60,
-                    centiseconds % 100,
-                },
-            ) catch unreachable;
-
-            w4.text(level, 12, 72);
-            w4.text(time, 4, 88);
+            if (game.input.pressed.button_1) {
+                game.state = .{ .level_start = game.level_index + 1 };
+            }
         },
     }
 }
@@ -267,15 +254,48 @@ fn draw(game: *const Game) void {
             w4.text(time, 83, 4);
         },
         .reset => {},
-        .level_complete => {},
+        .level_complete => {
+            w4.draw.color_1 = .palette_4;
+            w4.rect(0, 0, w4.screen_size_px, w4.screen_size_px);
+
+            w4.draw.color_1 = .palette_1;
+            w4.draw.color_2 = .palette_4;
+            defer w4.draw.color_1 = .palette_1;
+            defer w4.draw.color_2 = .palette_2;
+
+            var level_text: [18]u8 = undefined;
+            const level = std.fmt.bufPrint(
+                &level_text,
+                "Level {d} COMPLETED",
+                .{game.level_index + 1},
+            ) catch unreachable;
+
+            const centiseconds: u32 = @intFromFloat(game.level_time_seconds * 100);
+            var time_text: [11]u8 = undefined;
+            const time = std.fmt.bufPrint(
+                &time_text,
+                "{d:0>2}:{d:0>2}.{d:0>2}",
+                .{
+                    (centiseconds / 6000) % 100,
+                    (centiseconds / 100) % 60,
+                    centiseconds % 100,
+                },
+            ) catch unreachable;
+
+            w4.text(level, 12, 72);
+            w4.draw.color_1 = .palette_2;
+            w4.text(time, 45, 88);
+        },
+        .level_start => {},
     }
 }
 
-const State = enum {
+const State = union(enum) {
     menu,
     running,
     level_complete,
     reset,
+    level_start: LevelIndex,
 };
 
 const w4 = @import("w4");

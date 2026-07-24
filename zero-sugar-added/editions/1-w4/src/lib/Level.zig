@@ -87,6 +87,7 @@ pub fn clean(level: *Level, pos: TilePos) bool {
 }
 
 pub fn parse(comptime bytes: []const u8) Level {
+    @setEvalBranchQuota(100_000);
     var level: Level = .empty;
     var has_start = false;
     var row: u8 = 0;
