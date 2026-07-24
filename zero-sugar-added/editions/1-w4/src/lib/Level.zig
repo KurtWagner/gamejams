@@ -135,18 +135,10 @@ pub fn draw(level: Level) void {
                     .{ .col = 0, .row = 3 },
                     pos,
                 ),
-                .dirty_light => drawTile(
-                    .{ .col = 0, .row = 0 },
-                    pos,
-                ),
-                .dirty_medium => drawTile(
-                    .{ .col = 0, .row = 1 },
-                    pos,
-                ),
-                .dirty_hectic => drawTile(
-                    .{ .col = 0, .row = 2 },
-                    pos,
-                ),
+                .dirty_light,
+                .dirty_medium,
+                .dirty_hectic,
+                => drawDirtyTile(pos, kind),
                 else => {},
             }
 
@@ -214,6 +206,44 @@ pub fn draw(level: Level) void {
                 else => {},
             }
         }
+    }
+}
+
+fn drawDirtyTile(src: TilePos, kind: TileKind) void {
+    defer w4.draw.color_1 = .palette_1;
+    defer w4.draw.color_2 = .palette_2;
+
+    const x, const y = src.toXy();
+    switch (kind) {
+        .dirty_light => {
+            w4.draw.color_1 = .palette_2;
+            w4.draw.color_2 = .palette_2;
+
+            w4.oval(x + 3, y + 4, 5, 4);
+            w4.oval(x + 9, y + 10, 4, 3);
+        },
+        .dirty_medium => {
+            w4.draw.color_1 = .palette_3;
+            w4.draw.color_2 = .palette_3;
+
+            w4.oval(x + 2, y + 3, 6, 5);
+            w4.oval(x + 9, y + 2, 5, 4);
+            w4.oval(x + 7, y + 10, 7, 4);
+
+            drawDirtyTile(src, .dirty_light);
+        },
+        .dirty_hectic => {
+            w4.draw.color_1 = .palette_4;
+            w4.draw.color_2 = .palette_4;
+
+            w4.oval(x + 1, y + 2, 7, 6);
+            w4.oval(x + 8, y + 1, 2, 3);
+            w4.oval(x + 3, y + 9, 2, 2);
+            w4.oval(x + 10, y + 8, 5, 6);
+
+            drawDirtyTile(src, .dirty_medium);
+        },
+        else => unreachable,
     }
 }
 
