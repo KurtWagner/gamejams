@@ -17,6 +17,12 @@ menu_banner_y: i32 = 0,
 /// Copy of the level for game mutation
 active_level: ?Level = null,
 
+/// Total time completing all levels
+total_time_seconds: u32 = 0,
+
+/// Time tracked for the active level
+level_time_seconds: u32 = 0,
+
 pub fn init(game: *Game) void {
     game.* = .{
         .state = .reset,
@@ -49,6 +55,11 @@ pub fn tick(game: *Game) void {
 fn update(game: *Game) void {
     game.input.update(w4.gamepads[0]);
     game.frame +%= 1;
+
+    if (game.frame % 60 == 0) {
+        game.level_time_seconds += 1;
+    }
+
     switch (game.state) {
         .reset => {
             game.frame = 0;
@@ -220,7 +231,16 @@ fn draw(game: *const Game) void {
 
             w4.draw.color_2 = .palette_4;
             defer w4.draw.color_2 = .palette_2;
-            w4.text(text, 50, 4);
+            w4.text(text, 12, 4);
+
+            var time_text: [5]u8 = undefined;
+            const time = std.fmt.bufPrint(
+                &time_text,
+                "{d:0>2}:{d:0>2}",
+                .{ (game.level_time_seconds / 60) % 100, game.level_time_seconds % 60 },
+            ) catch unreachable;
+
+            w4.text(time, 107, 4);
         },
         .reset => {},
     }
