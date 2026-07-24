@@ -17,11 +17,9 @@ menu_banner_y: i32 = 0,
 /// Copy of the level for game mutation
 active_level: ?Level = null,
 
-/// Total time completing all levels
-total_time_seconds: f32 = 0,
-
-/// Time tracked for the active level
-level_time_seconds: f32 = 0,
+/// Time remaining to complete the level. Remaining time from previous levels
+/// accumulate.
+remaining_time_seconds: f32 = 0,
 
 pub fn init(game: *Game) void {
     game.* = .{
@@ -77,7 +75,7 @@ fn update(game: *Game) void {
                 game.menu_banner_y += 1;
         },
         .running => {
-            game.level_time_seconds += 1.0 / 60.0;
+            game.remaining_time_seconds -= 1.0 / 60.0;
 
             var velocity: @Vector(2, f16) = .{ 0, 0 };
             if (game.input.down.button_left) {
@@ -121,14 +119,13 @@ fn update(game: *Game) void {
             }
 
             if (game.active_level.?.isComplete()) {
-                game.total_time_seconds += game.level_time_seconds;
                 game.state = .level_complete;
             }
         },
         .level_start => |level_idx| {
-            game.level_time_seconds = 0;
             game.level_index = level_idx;
             game.active_level = levels.all[game.level_index];
+            game.remaining_time_seconds += game.active_level.?.allowed_seconds;
             game.player.xy = .{
                 game.active_level.?.start_col * tile_size,
                 game.active_level.?.start_row * tile_size,
@@ -239,7 +236,7 @@ fn draw(game: *const Game) void {
             defer w4.draw.color_2 = .palette_2;
             w4.text(text, 12, 4);
 
-            const centiseconds: u32 = @intFromFloat(game.level_time_seconds * 100);
+            const centiseconds: u32 = @intFromFloat(game.remaining_time_seconds * 100);
             var time_text: [8]u8 = undefined;
             const time = std.fmt.bufPrint(
                 &time_text,
@@ -270,7 +267,7 @@ fn draw(game: *const Game) void {
                 .{game.level_index + 1},
             ) catch unreachable;
 
-            const centiseconds: u32 = @intFromFloat(game.level_time_seconds * 100);
+            const centiseconds: u32 = @intFromFloat(game.remaining_time_seconds * 100);
             var time_text: [11]u8 = undefined;
             const time = std.fmt.bufPrint(
                 &time_text,

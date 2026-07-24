@@ -60,6 +60,11 @@ start_row: u8,
 tiles: [grid_size][grid_size]TileKind,
 vertices: [grid_size + 1][grid_size + 1]Vertex,
 
+/// How long the user has to complete the level. Left over seconds overflow to
+/// the next level. Levels should get progressively impossible by not ptoviding
+/// sufficient time without accumulating time from easier levels.
+allowed_seconds: f32,
+
 light_dirt: Dirt,
 medium_dirt: Dirt,
 hectic_dirt: Dirt,
@@ -77,6 +82,7 @@ pub const empty: Level = .{
     .light_dirt = .clean,
     .medium_dirt = .clean,
     .hectic_dirt = .clean,
+    .allowed_seconds = 0,
 };
 
 pub fn clean(level: *Level, pos: TilePos) bool {
@@ -86,7 +92,9 @@ pub fn clean(level: *Level, pos: TilePos) bool {
     return false;
 }
 
-pub fn parse(comptime bytes: []const u8) Level {
+pub fn parse(
+    comptime bytes: []const u8,
+) Level {
     @setEvalBranchQuota(100_000);
     var level: Level = .empty;
     var has_start = false;
@@ -101,17 +109,20 @@ pub fn parse(comptime bytes: []const u8) Level {
                 '1' => {
                     level.tiles[col][row] = .floor;
                     level.light_dirt.setDirty(.{ .col = col, .row = row });
+                    level.allowed_seconds += 0.3;
                 },
                 '2' => {
                     level.tiles[col][row] = .floor;
                     level.light_dirt.setDirty(.{ .col = col, .row = row });
                     level.medium_dirt.setDirty(.{ .col = col, .row = row });
+                    level.allowed_seconds += 0.4;
                 },
                 '3' => {
                     level.tiles[col][row] = .floor;
                     level.light_dirt.setDirty(.{ .col = col, .row = row });
                     level.medium_dirt.setDirty(.{ .col = col, .row = row });
                     level.hectic_dirt.setDirty(.{ .col = col, .row = row });
+                    level.allowed_seconds += 0.5;
                 },
                 'x' => {
                     level.tiles[col][row] = .floor;
