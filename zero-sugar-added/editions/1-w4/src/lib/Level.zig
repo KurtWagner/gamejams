@@ -234,6 +234,12 @@ pub fn draw(level: Level) void {
     }
 }
 
+pub fn isComplete(level: Level) bool {
+    return level.hectic_dirt.remainingDirty() == 0 and
+        level.medium_dirt.remainingDirty() == 0 and
+        level.light_dirt.remainingDirty() == 0;
+}
+
 fn drawFloor(level: Level, src: TilePos) void {
     defer w4.draw.color_1 = .palette_1;
     defer w4.draw.color_2 = .palette_2;

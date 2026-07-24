@@ -127,9 +127,32 @@ fn update(game: *Game) void {
                 .none => {},
             }
 
-            if (game.input.pressed.button_1) {
-                game.state = .menu;
+            if (game.active_level.?.isComplete()) {
+                game.state = .level_complete;
             }
+        },
+        .level_complete => {
+            var level_text: [18]u8 = undefined;
+            const level = std.fmt.bufPrint(
+                &level_text,
+                "Level {d} completed",
+                .{game.level_index + 1},
+            ) catch unreachable;
+
+            const centiseconds: u32 = @intFromFloat(game.level_time_seconds * 100);
+            var time_text: [22]u8 = undefined;
+            const time = std.fmt.bufPrint(
+                &time_text,
+                "in {d:0>2}:{d:0>2}.{d:0>2} seconds",
+                .{
+                    (centiseconds / 6000) % 100,
+                    (centiseconds / 100) % 60,
+                    centiseconds % 100,
+                },
+            ) catch unreachable;
+
+            w4.text(level, 12, 72);
+            w4.text(time, 4, 88);
         },
     }
 }
@@ -245,12 +268,14 @@ fn draw(game: *const Game) void {
             w4.text(time, 83, 4);
         },
         .reset => {},
+        .level_complete => {},
     }
 }
 
 const State = enum {
     menu,
     running,
+    level_complete,
     reset,
 };
 
