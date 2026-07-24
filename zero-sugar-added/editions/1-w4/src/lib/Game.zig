@@ -151,6 +151,8 @@ fn update(game: *Game) void {
             }
         },
         .game_over => {
+            game.playGameOverMusicOnce();
+
             if (game.input.pressed.button_1) {
                 game.state = .reset;
             }
@@ -202,6 +204,64 @@ fn playMusic(game: *const Game) void {
             w4.toneNote(69, 0, note_duration, note_volume, .{
                 .channel = .pulse_1,
                 .duty_cycle = .quarter,
+            });
+        },
+        else => {},
+    }
+}
+
+fn playGameOverMusicOnce(game: *Game) void {
+    std.debug.assert(game.state == .game_over);
+
+    if (game.state.game_over.game_over_frame > 54) return;
+    game.state.game_over.game_over_frame += 1;
+
+    const melody_volume = w4.Volume.flat(16);
+    const bass_volume = w4.Volume.flat(24);
+    const melody_duration = w4.Adsr{
+        .sustain = 14,
+        .release = 8,
+    };
+    const bass_duration = w4.Adsr.gated(16);
+
+    switch (game.state.game_over.game_over_frame) {
+        0 => {
+            w4.toneNote(67, 0, melody_duration, melody_volume, .{
+                .channel = .pulse_1,
+                .duty_cycle = .half,
+            });
+            w4.toneNote(43, 0, bass_duration, bass_volume, .{
+                .channel = .triangle,
+            });
+        },
+        18 => {
+            w4.toneNote(66, 0, melody_duration, melody_volume, .{
+                .channel = .pulse_1,
+                .duty_cycle = .half,
+            });
+        },
+        36 => {
+            w4.toneNote(65, 0, melody_duration, melody_volume, .{
+                .channel = .pulse_1,
+                .duty_cycle = .half,
+            });
+            w4.toneNote(41, 0, bass_duration, bass_volume, .{
+                .channel = .triangle,
+            });
+        },
+        54 => {
+            w4.toneNote(64, 0, .{
+                .sustain = 28,
+                .release = 18,
+            }, melody_volume, .{
+                .channel = .pulse_1,
+                .duty_cycle = .half,
+            });
+            w4.toneNote(36, 0, .{
+                .sustain = 28,
+                .release = 18,
+            }, bass_volume, .{
+                .channel = .triangle,
             });
         },
         else => {},
@@ -345,6 +405,7 @@ const State = union(enum) {
     game_over: struct {
         max_level_reached: u8,
         total_tiles_cleaned: u32,
+        game_over_frame: u8 = 0,
     },
 };
 
