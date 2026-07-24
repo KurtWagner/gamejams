@@ -102,7 +102,12 @@ fn update(game: *Game) void {
                 // Good job cleaning this tile
                 .enter_floor_tile => |pos| {
                     if (game.active_level.?.clean(pos)) {
-                        // TODO: play clean sound
+                        w4.toneSlide(900, 240, .{
+                            .sustain = 20,
+                            .release = 20,
+                        }, w4.Volume.flat(8), .{
+                            .channel = .noise,
+                        });
                     }
 
                     // TODO: clean but needs copy of dirt
