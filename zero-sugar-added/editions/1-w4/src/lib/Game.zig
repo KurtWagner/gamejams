@@ -56,6 +56,7 @@ fn update(game: *Game) void {
 
     switch (game.state) {
         .reset => {
+            game.playMusic();
             game.frame = 0;
             game.menu_banner_y = -assets.banner_height;
             game.menu_cleaner_x_offset = 0;
@@ -133,6 +134,7 @@ fn update(game: *Game) void {
             }
         },
         .level_start => |level_idx| {
+            game.playMusic();
             game.level_index = level_idx;
             game.active_level = levels.all[game.level_index];
             game.remaining_time_seconds += game.active_level.?.allowed_seconds;
@@ -143,6 +145,7 @@ fn update(game: *Game) void {
             game.state = .running;
         },
         .level_complete => {
+            game.playMusic();
             if (game.input.pressed.button_1) {
                 game.state = .{ .level_start = game.level_index + 1 };
             }
