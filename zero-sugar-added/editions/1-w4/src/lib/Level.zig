@@ -38,15 +38,11 @@ const TileKind = enum {
     back_wall,
     wall,
     floor,
-    dirty_light,
-    dirty_medium,
-    dirty_hectic,
-
     fn isWall(self: @This()) bool {
         return switch (self) {
             .none => false,
             .wall, .back_wall => true,
-            .floor, .dirty_light, .dirty_medium, .dirty_hectic => false,
+            .floor => false,
         };
     }
 
@@ -54,7 +50,7 @@ const TileKind = enum {
         return switch (self) {
             .none => false,
             .wall, .back_wall => false,
-            .floor, .dirty_light, .dirty_medium, .dirty_hectic => true,
+            .floor => true,
         };
     }
 };
@@ -73,9 +69,9 @@ pub const empty: Level = .{
     .start_row = 0,
     .tiles = @splat(@splat(.wall)),
     .vertices = @splat(@splat(.none)),
-    .light_dirt = .all_clean,
-    .medium_dirt = .all_clean,
-    .hectic_dirt = .all_clean,
+    .light_dirt = .clean,
+    .medium_dirt = .clean,
+    .hectic_dirt = .clean,
 };
 
 pub fn parse(comptime bytes: []const u8) Level {
@@ -90,16 +86,19 @@ pub fn parse(comptime bytes: []const u8) Level {
                 '|' => level.tiles[col][row] = .wall,
                 '0' => level.tiles[col][row] = .floor,
                 '1' => {
-                    level.tiles[col][row] = .dirty_light;
-                    level.light_dirt.dirty(.{ .col = col, .row = row });
+                    level.tiles[col][row] = .floor;
+                    level.light_dirt.setDirty(.{ .col = col, .row = row });
                 },
                 '2' => {
-                    level.tiles[col][row] = .dirty_medium;
-                    level.medium_dirt.dirty(.{ .col = col, .row = row });
+                    level.tiles[col][row] = .floor;
+                    level.light_dirt.setDirty(.{ .col = col, .row = row });
+                    level.medium_dirt.setDirty(.{ .col = col, .row = row });
                 },
                 '3' => {
-                    level.tiles[col][row] = .dirty_hectic;
-                    level.hectic_dirt.dirty(.{ .col = col, .row = row });
+                    level.tiles[col][row] = .floor;
+                    level.light_dirt.setDirty(.{ .col = col, .row = row });
+                    level.medium_dirt.setDirty(.{ .col = col, .row = row });
+                    level.hectic_dirt.setDirty(.{ .col = col, .row = row });
                 },
                 'x' => {
                     level.tiles[col][row] = .floor;
@@ -151,14 +150,7 @@ pub fn draw(level: Level) void {
                     .{ .col = 0, .row = 3 },
                     pos,
                 ),
-                .dirty_light,
-                .dirty_medium,
-                .dirty_hectic,
-                => {
-                    drawCleanTile(pos); // Clean under the dirt...
-                    drawDirtyTile(pos, kind);
-                },
-                .floor => drawCleanTile(pos),
+                .floor => drawFloor(level, pos),
                 .none => {},
             }
 
@@ -229,7 +221,7 @@ pub fn draw(level: Level) void {
     }
 }
 
-fn drawCleanTile(src: TilePos) void {
+fn drawFloor(level: Level, src: TilePos) void {
     defer w4.draw.color_1 = .palette_1;
     defer w4.draw.color_2 = .palette_2;
 
@@ -240,63 +232,44 @@ fn drawCleanTile(src: TilePos) void {
 
         w4.rect(x, y, tile_size + 1, tile_size + 1);
     }
-    //     var dx = x;
-    //     while (dx < x + tile_size) : (dx += 4) {
-    //         var dy = y;
-    //         while (dy < y + tile_size) : (dy += 4) {
-    //             w4.rect(dx, dy, 4, 4);
-    //         }
-    //     }
-    // }
-}
 
-fn drawDirtyTile(src: TilePos, kind: TileKind) void {
-    defer w4.draw.color_1 = .palette_1;
-    defer w4.draw.color_2 = .palette_2;
+    if (level.hectic_dirt.isDirty(src)) {
+        w4.draw.color_1 = .palette_4;
+        w4.draw.color_2 = .palette_4;
 
-    const x, const y = src.toXy();
-    switch (kind) {
-        .dirty_light => {
-            w4.draw.color_1 = .palette_2;
-            w4.draw.color_2 = .palette_2;
-
-            var dx = x;
-            while (dx < x + tile_size) : (dx += 2) {
-                var dy = y;
-                while (dy < y + tile_size) : (dy += 2) {
-                    w4.rect(dx, dy, 1, 1);
-                }
+        var dx = x;
+        while (dx < x + tile_size) : (dx += 4) {
+            var dy = y;
+            while (dy < y + tile_size) : (dy += 4) {
+                w4.rect(dx, dy, 1, 1);
             }
-        },
-        .dirty_medium => {
-            w4.draw.color_1 = .palette_3;
-            w4.draw.color_2 = .palette_3;
+        }
+    }
 
-            var dx = x;
-            while (dx < x + tile_size) : (dx += 3) {
-                var dy = y;
-                while (dy < y + tile_size) : (dy += 3) {
-                    w4.rect(dx, dy, 1, 1);
-                }
+    if (level.medium_dirt.isDirty(src)) {
+        w4.draw.color_1 = .palette_3;
+        w4.draw.color_2 = .palette_3;
+
+        var dx = x;
+        while (dx < x + tile_size) : (dx += 3) {
+            var dy = y;
+            while (dy < y + tile_size) : (dy += 3) {
+                w4.rect(dx, dy, 1, 1);
             }
+        }
+    }
 
-            drawDirtyTile(src, .dirty_light);
-        },
-        .dirty_hectic => {
-            w4.draw.color_1 = .palette_4;
-            w4.draw.color_2 = .palette_4;
+    if (level.light_dirt.isDirty(src)) {
+        w4.draw.color_1 = .palette_2;
+        w4.draw.color_2 = .palette_2;
 
-            var dx = x;
-            while (dx < x + tile_size) : (dx += 4) {
-                var dy = y;
-                while (dy < y + tile_size) : (dy += 4) {
-                    w4.rect(dx, dy, 1, 1);
-                }
+        var dx = x;
+        while (dx < x + tile_size) : (dx += 2) {
+            var dy = y;
+            while (dy < y + tile_size) : (dy += 2) {
+                w4.rect(dx, dy, 1, 1);
             }
-
-            drawDirtyTile(src, .dirty_medium);
-        },
-        else => unreachable,
+        }
     }
 }
 
@@ -429,11 +402,11 @@ pub fn isCollision(level: Level, player: Player) bool {
 pub const Dirt = struct {
     rows: [10]std.bit_set.Integer(10),
 
-    pub const all_clean: Dirt = .{
+    pub const clean: Dirt = .{
         .rows = @splat(.empty),
     };
 
-    fn remaining(self: Dirt) u8 {
+    fn remainingDirty(self: Dirt) u8 {
         var count: u8 = 0;
         for (self.rows) |row| {
             count += @intCast(row.count());
@@ -442,12 +415,16 @@ pub const Dirt = struct {
     }
 
     /// Marks as dirty
-    fn dirty(self: *Dirt, tile: TilePos) void {
+    fn setDirty(self: *Dirt, tile: TilePos) void {
         self.rows[tile.row].set(tile.col);
     }
 
+    fn isDirty(self: Dirt, tile: TilePos) bool {
+        return self.rows[tile.row].isSet(tile.col);
+    }
+
     /// Marks as clean and returns true if was dirty
-    fn clean(self: *Dirt, tile: TilePos) bool {
+    fn setClean(self: *Dirt, tile: TilePos) bool {
         const wasDirty = self.rows[tile.row].isSet(tile.col);
         if (wasDirty)
             self.rows[tile.row].unset(tile.col);
