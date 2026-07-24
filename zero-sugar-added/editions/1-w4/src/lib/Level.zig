@@ -376,11 +376,15 @@ pub fn isCollision(level: Level, player: Player) bool {
     const player_top_left = player.xy;
     const player_bottom_right: @Vector(2, f16) = player.xy + player.size;
 
-    // TODO: Just check surrounding tiles
-    var row: u8 = 0;
-    while (row < level.tiles.len) : (row += 1) {
-        var col: u8 = 0;
-        while (col < 10) : (col += 1) {
+    const min_col: u8 = @intFromFloat(@max(0, @floor(player_top_left[0] / tile_size)));
+    const max_col: u8 = @intFromFloat(@min(9, @floor(player_bottom_right[0] / tile_size)));
+    const min_row: u8 = @intFromFloat(@max(0, @floor(player_top_left[1] / tile_size)));
+    const max_row: u8 = @intFromFloat(@min(9, @floor(player_bottom_right[1] / tile_size)));
+
+    var row = min_row;
+    while (row <= max_row) : (row += 1) {
+        var col = min_col;
+        while (col <= max_col) : (col += 1) {
             if (level.tiles[col][row].isWall()) {
                 const tile_top_left: @Vector(2, f16) = .{
                     col * tile_size,
