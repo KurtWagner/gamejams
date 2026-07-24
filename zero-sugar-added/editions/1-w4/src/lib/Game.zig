@@ -92,8 +92,14 @@ fn update(game: *Game) void {
             const current = game.player.xy;
 
             game.player.xy += (velocity * game.player.speed);
-            if (levels.all[game.level].isCollision(game.player)) {
-                game.player.xy = current;
+            switch (levels.all[game.level].getCollision(game.player)) {
+                // Get back there mate
+                .wall => game.player.xy = current,
+                // Good job cleaning this tile
+                .single_floor_tile => {
+                    // TODO: clean but needs copy of dirt
+                },
+                .none => {},
             }
 
             if (game.input.pressed.button_1) {

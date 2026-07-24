@@ -3,6 +3,7 @@ const Level = @This();
 // TODO: Dont repeat this everywhere
 const tile_size = 16;
 const tile_size_vec2: @Vector(2, f16) = @splat(tile_size);
+pub const grid_size = 10;
 
 /// Indicates wheter there's floor (true) or wall (false) in each quadrant from vertex
 const Vertex = packed struct(u4) {
@@ -57,8 +58,8 @@ const TileKind = enum {
 
 start_col: u8,
 start_row: u8,
-tiles: [10][10]TileKind,
-vertices: [11][11]Vertex,
+tiles: [grid_size][grid_size]TileKind,
+vertices: [grid_size + 1][grid_size + 1]Vertex,
 
 light_dirt: Dirt,
 medium_dirt: Dirt,
@@ -78,9 +79,9 @@ pub fn parse(comptime bytes: []const u8) Level {
     var level: Level = .empty;
     var has_start = false;
     var row: u8 = 0;
-    while (row < 10) : (row += 1) {
-        const start = row * 11;
-        for (bytes[start .. start + 10], 0..) |c, col| {
+    while (row < grid_size) : (row += 1) {
+        const start = row * (grid_size + 1);
+        for (bytes[start .. start + grid_size], 0..) |c, col| {
             switch (c) {
                 '-' => level.tiles[col][row] = .back_wall,
                 '|' => level.tiles[col][row] = .wall,
@@ -117,7 +118,7 @@ pub fn parse(comptime bytes: []const u8) Level {
     row = 0;
     while (row < level.tiles.len) : (row += 1) {
         var col: u8 = 0;
-        while (col < 10) : (col += 1) {
+        while (col < grid_size) : (col += 1) {
             const kind = level.tiles[col][row];
 
             if (kind.isFloor()) {
@@ -136,7 +137,7 @@ pub fn draw(level: Level) void {
     var row: u8 = 0;
     while (row < level.tiles.len) : (row += 1) {
         var col: u8 = 0;
-        while (col < 10) : (col += 1) {
+        while (col < grid_size) : (col += 1) {
             const pos: TilePos = .{ .col = col, .row = row };
             const kind = level.tiles[col][row];
             switch (kind) {
@@ -372,14 +373,23 @@ fn drawTile(src: TilePos, dest: TilePos) void {
     );
 }
 
-pub fn isCollision(level: Level, player: Player) bool {
+pub const CollisionKind = enum {
+    /// No collision and not centered on floor tile.
+    none,
+    /// Player is colliding with a wall so should not be able to move
+    wall,
+    /// Player is within one single floor tile. e.g., should clean the tile
+    single_floor_tile,
+};
+
+pub fn getCollision(level: Level, player: Player) CollisionKind {
     const player_top_left = player.xy;
     const player_bottom_right: @Vector(2, f16) = player.xy + player.size;
 
     const min_col: u8 = @intFromFloat(@max(0, @floor(player_top_left[0] / tile_size)));
-    const max_col: u8 = @intFromFloat(@min(9, @floor(player_bottom_right[0] / tile_size)));
+    const max_col: u8 = @intFromFloat(@min(grid_size - 1, @floor(player_bottom_right[0] / tile_size)));
     const min_row: u8 = @intFromFloat(@max(0, @floor(player_top_left[1] / tile_size)));
-    const max_row: u8 = @intFromFloat(@min(9, @floor(player_bottom_right[1] / tile_size)));
+    const max_row: u8 = @intFromFloat(@min(grid_size - 1, @floor(player_bottom_right[1] / tile_size)));
 
     var row = min_row;
     while (row <= max_row) : (row += 1) {
@@ -396,15 +406,20 @@ pub fn isCollision(level: Level, player: Player) bool {
                 const inside_y = (player_top_left[1] <= tile_bottom_right[1]) and (player_bottom_right[1] >= tile_top_left[1]);
 
                 if (inside_x and inside_y)
-                    return true;
+                    return .wall;
             }
         }
     }
-    return false;
+
+    if (min_col == max_col and min_row == max_row) {
+        return if (level.tiles[min_row][max_row].isFloor()) .single_floor_tile else .none;
+    }
+
+    return .none;
 }
 
 pub const Dirt = struct {
-    rows: [10]std.bit_set.Integer(10),
+    rows: [grid_size]std.bit_set.Integer(grid_size),
 
     pub const clean: Dirt = .{
         .rows = @splat(.empty),
