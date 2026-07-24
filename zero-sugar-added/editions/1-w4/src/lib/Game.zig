@@ -81,13 +81,17 @@ fn update(game: *Game) void {
             var velocity: @Vector(2, f16) = .{ 0, 0 };
             if (game.input.down.button_left) {
                 velocity[0] -= 0.2;
+                game.player.direction = .left;
             } else if (game.input.down.button_right) {
                 velocity[0] += 0.2;
+                game.player.direction = .right;
             }
             if (game.input.down.button_up) {
                 velocity[1] -= 0.2;
+                game.player.direction = .up;
             } else if (game.input.down.button_down) {
                 velocity[1] += 0.2;
+                game.player.direction = .down;
             }
 
             if (velocity[0] != 0 and velocity[1] != 0)
