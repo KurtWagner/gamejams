@@ -8,8 +8,8 @@ speed: @Vector(2, f16),
 
 pub const empty: Player = .{
     .xy = @splat(0),
-    .speed = @splat(5),
-    .size = @splat(8),
+    .speed = @splat(8),
+    .size = @splat(10),
 };
 
 pub fn draw(player: Player) void {

@@ -392,7 +392,10 @@ pub const CollisionKind = union(enum) {
 
 pub fn getCollision(level: *Level, player: Player) CollisionKind {
     const player_top_left = player.xy;
-    const player_bottom_right: @Vector(2, f16) = player.xy + player.size;
+    const player_bottom_right: @Vector(2, f16) = .{
+        player.xy[0] + player.size[0] - 1,
+        player.xy[1] + player.size[1] - 1,
+    };
 
     const min_col: u8 = @intFromFloat(@max(0, @floor(player_top_left[0] / tile_size)));
     const max_col: u8 = @intFromFloat(@min(grid_size - 1, @floor(player_bottom_right[0] / tile_size)));
