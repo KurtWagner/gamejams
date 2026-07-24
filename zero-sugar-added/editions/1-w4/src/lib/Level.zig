@@ -75,6 +75,13 @@ pub const empty: Level = .{
     .hectic_dirt = .clean,
 };
 
+pub fn clean(level: *Level, pos: TilePos) bool {
+    if (level.hectic_dirt.setClean(pos)) return true;
+    if (level.medium_dirt.setClean(pos)) return true;
+    if (level.light_dirt.setClean(pos)) return true;
+    return false;
+}
+
 pub fn parse(comptime bytes: []const u8) Level {
     var level: Level = .empty;
     var has_start = false;
@@ -373,13 +380,13 @@ fn drawTile(src: TilePos, dest: TilePos) void {
     );
 }
 
-pub const CollisionKind = enum {
+pub const CollisionKind = union(enum) {
     /// No collision and not centered on floor tile.
-    none,
+    none: void,
     /// Player is colliding with a wall so should not be able to move
-    wall,
+    wall: void,
     /// Player is within one single floor tile. e.g., should clean the tile
-    single_floor_tile,
+    single_floor_tile: TilePos,
 };
 
 pub fn getCollision(level: Level, player: Player) CollisionKind {
@@ -412,7 +419,12 @@ pub fn getCollision(level: Level, player: Player) CollisionKind {
     }
 
     if (min_col == max_col and min_row == max_row) {
-        return if (level.tiles[min_row][max_row].isFloor()) .single_floor_tile else .none;
+        return if (level.tiles[min_row][max_row].isFloor()) .{
+            .single_floor_tile = .{
+                .col = min_col,
+                .row = min_row,
+            },
+        } else .none;
     }
 
     return .none;

@@ -7,18 +7,21 @@ const diag_multiplier: @Vector(2, f16) = @splat(0.7);
 
 state: State,
 input: Input,
-level: LevelIndex,
+level_index: LevelIndex,
 player: Player,
 frame: u16,
 
 menu_cleaner_x_offset: u1 = 0,
 menu_banner_y: i32 = 0,
 
+/// Copy of the level for game mutation
+active_level: ?Level = null,
+
 pub fn init(game: *Game) void {
     game.* = .{
         .state = .reset,
         .input = .empty,
-        .level = 0,
+        .level_index = 0,
         .player = .empty,
         .frame = 0,
     };
@@ -59,10 +62,11 @@ fn update(game: *Game) void {
             if (game.input.pressed.button_1) {
                 game.state = .running;
 
-                game.level = 0;
+                game.level_index = 0;
+                game.active_level = levels.all[game.level_index];
                 game.player.xy = .{
-                    levels.all[game.level].start_col * tile_size,
-                    levels.all[game.level].start_row * tile_size,
+                    game.active_level.?.start_col * tile_size,
+                    game.active_level.?.start_row * tile_size,
                 };
             }
 
@@ -92,11 +96,15 @@ fn update(game: *Game) void {
             const current = game.player.xy;
 
             game.player.xy += (velocity * game.player.speed);
-            switch (levels.all[game.level].getCollision(game.player)) {
+            switch (game.active_level.?.getCollision(game.player)) {
                 // Get back there mate
                 .wall => game.player.xy = current,
                 // Good job cleaning this tile
-                .single_floor_tile => {
+                .single_floor_tile => |pos| {
+                    if (game.active_level.?.clean(pos)) {
+                        // TODO: play clean sound
+                    }
+
                     // TODO: clean but needs copy of dirt
                 },
                 .none => {},
@@ -191,14 +199,14 @@ fn draw(game: *const Game) void {
             );
         },
         .running => {
-            levels.all[game.level].draw();
+            game.active_level.?.draw();
             game.player.draw();
 
             var level_text: [10]u8 = undefined;
             const text = std.fmt.bufPrint(
                 &level_text,
                 "Level {d}",
-                .{game.level + 1},
+                .{game.level_index + 1},
             ) catch unreachable;
 
             w4.draw.color_2 = .palette_4;
