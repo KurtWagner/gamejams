@@ -62,7 +62,7 @@ fn update(game: *Game) void {
             game.state = .menu;
         },
         .menu => {
-            game.playMenuMusic();
+            game.playMusic();
 
             if (game.input.pressed.button_1) {
                 game.state = .{ .level_start = 0 };
@@ -75,7 +75,17 @@ fn update(game: *Game) void {
                 game.menu_banner_y += 1;
         },
         .running => {
+            game.playMusic();
             game.remaining_time_seconds -= 1.0 / 60.0;
+            if (game.remaining_time_seconds <= 0) {
+                game.state = .{
+                    .game_over = .{
+                        .max_level_reached = game.level_index + 1,
+                        .total_tiles_cleaned = 0, // TODO: implemenmt this
+                    },
+                };
+                return;
+            }
 
             var velocity: @Vector(2, f16) = .{ 0, 0 };
             if (game.input.down.button_left) {
@@ -137,10 +147,15 @@ fn update(game: *Game) void {
                 game.state = .{ .level_start = game.level_index + 1 };
             }
         },
+        .game_over => {
+            if (game.input.pressed.button_1) {
+                game.state = .reset;
+            }
+        },
     }
 }
 
-fn playMenuMusic(game: *const Game) void {
+fn playMusic(game: *const Game) void {
     const note_duration = w4.Adsr{
         .sustain = 6,
         .release = 3,
@@ -284,6 +299,37 @@ fn draw(game: *const Game) void {
             w4.text(time, 45, 88);
         },
         .level_start => {},
+        .game_over => |stats| {
+            w4.draw.color_1 = .palette_4;
+            w4.rect(0, 0, w4.screen_size_px, w4.screen_size_px);
+
+            var level_text: [32]u8 = undefined;
+            const level = std.fmt.bufPrint(
+                &level_text,
+                "Max Level {d}",
+                .{stats.max_level_reached},
+            ) catch unreachable;
+
+            var tiles_text: [32]u8 = undefined;
+            const tiles = std.fmt.bufPrint(
+                &tiles_text,
+                "Tiles Cleaned {d}",
+                .{stats.total_tiles_cleaned},
+            ) catch unreachable;
+
+            w4.draw.color_1 = .palette_1;
+            w4.draw.color_2 = .palette_4;
+
+            // The game can be changed to not need these defers but its a jam so eh
+            defer w4.draw.color_1 = .palette_1;
+            defer w4.draw.color_2 = .palette_2;
+
+            w4.text("GAME OVER", 43, 50);
+            w4.draw.color_1 = .palette_2;
+
+            w4.text(level, 38, 72);
+            w4.text(tiles, 18, 88);
+        },
     }
 }
 
@@ -293,6 +339,10 @@ const State = union(enum) {
     level_complete,
     reset,
     level_start: LevelIndex,
+    game_over: struct {
+        max_level_reached: u8,
+        total_tiles_cleaned: u32,
+    },
 };
 
 const w4 = @import("w4");
