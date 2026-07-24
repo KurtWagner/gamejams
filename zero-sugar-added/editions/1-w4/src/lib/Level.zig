@@ -2,7 +2,6 @@ const Level = @This();
 
 // TODO: Dont repeat this everywhere
 const tile_size = 16;
-const tile_size_vec2: @Vector(2, f16) = @splat(tile_size);
 pub const grid_size = 10;
 
 /// Indicates wheter there's floor (true) or wall (false) in each quadrant from vertex
@@ -308,6 +307,25 @@ fn tileToTop(level: Level, src: TilePos) TileKind {
     return level.tiles[src.col][src.row - 1];
 }
 
+const XY = struct {
+    x: f16,
+    y: f16,
+
+    fn fromCoord(coord: TilePos) XY {
+        return .{
+            .x = coord.col * tile_size,
+            .y = coord.row * tile_size,
+        };
+    }
+
+    fn add(a: XY, b: XY) XY {
+        return .{
+            .x = a.x + b.x,
+            .y = a.y + b.y,
+        };
+    }
+};
+
 const TilePos = packed struct(u16) {
     col: u8,
     row: u8,
@@ -397,30 +415,33 @@ pub const CollisionKind = union(enum) {
 };
 
 pub fn getCollision(level: *Level, player: Player) CollisionKind {
-    const player_top_left = player.xy;
-    const player_bottom_right: @Vector(2, f16) = .{
-        player.xy[0] + player.size[0] - 1,
-        player.xy[1] + player.size[1] - 1,
+    const player_top_left: XY = .{ .x = player.xy[0], .y = player.xy[1] };
+    const player_bottom_right: XY = .{
+        .x = player.xy[0] + player.size[0] - 1,
+        .y = player.xy[1] + player.size[1] - 1,
     };
 
-    const min_col: u8 = @intFromFloat(@max(0, @floor(player_top_left[0] / tile_size)));
-    const max_col: u8 = @intFromFloat(@min(grid_size - 1, @floor(player_bottom_right[0] / tile_size)));
-    const min_row: u8 = @intFromFloat(@max(0, @floor(player_top_left[1] / tile_size)));
-    const max_row: u8 = @intFromFloat(@min(grid_size - 1, @floor(player_bottom_right[1] / tile_size)));
+    const min_col: u8 = @intFromFloat(@max(0, @floor(player_top_left.x / tile_size)));
+    const max_col: u8 = @intFromFloat(@min(grid_size - 1, @floor(player_bottom_right.x / tile_size)));
+    const min_row: u8 = @intFromFloat(@max(0, @floor(player_top_left.y / tile_size)));
+    const max_row: u8 = @intFromFloat(@min(grid_size - 1, @floor(player_bottom_right.y / tile_size)));
 
     var row = min_row;
     while (row <= max_row) : (row += 1) {
         var col = min_col;
         while (col <= max_col) : (col += 1) {
             if (level.tiles[col][row].isWall()) {
-                const tile_top_left: @Vector(2, f16) = .{
-                    col * tile_size,
-                    row * tile_size,
-                };
-                const tile_bottom_right = tile_top_left + tile_size_vec2;
+                const coord: TilePos = .{ .col = col, .row = row };
+                const tile_top_left: XY = .fromCoord(coord);
+                const tile_bottom_right = tile_top_left.add(.{
+                    .x = tile_size,
+                    .y = tile_size,
+                });
 
-                const inside_x = (player_top_left[0] <= tile_bottom_right[0]) and (player_bottom_right[0] >= tile_top_left[0]);
-                const inside_y = (player_top_left[1] <= tile_bottom_right[1]) and (player_bottom_right[1] >= tile_top_left[1]);
+                const inside_x = (player_top_left.x <= tile_bottom_right.x) and
+                    (player_bottom_right.x >= tile_top_left.x);
+                const inside_y = (player_top_left.y <= tile_bottom_right.y) and
+                    (player_bottom_right.y >= tile_top_left.y);
 
                 if (inside_x and inside_y)
                     return .wall;

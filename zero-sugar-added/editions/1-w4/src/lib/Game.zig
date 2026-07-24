@@ -85,7 +85,6 @@ fn update(game: *Game) void {
                 game.menu_banner_y += 1;
         },
         .running => {
-            // TODO:  Fix diagonal speed
             var velocity: @Vector(2, f16) = .{ 0, 0 };
             if (game.input.down.button_left) {
                 velocity[0] -= 0.2;
