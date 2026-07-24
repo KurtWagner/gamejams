@@ -428,7 +428,7 @@ pub fn getCollision(level: *Level, player: Player) CollisionKind {
         if (tile == level.prev_single_tile_collision)
             return .none;
 
-        if (level.tiles[min_row][max_row].isFloor()) {
+        if (level.tiles[min_col][max_row].isFloor()) {
             level.prev_single_tile_collision = tile;
             return .{ .enter_floor_tile = tile };
         } else return .none;
