@@ -250,35 +250,31 @@ fn drawFloor(level: Level, src: TilePos) void {
         w4.draw.color_1 = .palette_4;
         w4.draw.color_2 = .palette_4;
 
-        var dx = x;
-        while (dx < x + tile_size) : (dx += 4) {
-            var dy = y;
-            while (dy < y + tile_size) : (dy += 4) {
+        var dx = x + 2;
+        while (dx < x + tile_size) : (dx += 2) {
+            var dy = y + 2;
+            while (dy < y + tile_size) : (dy += 2) {
                 w4.rect(dx, dy, 1, 1);
             }
         }
-    }
-
-    if (level.medium_dirt.isDirty(src)) {
+    } else if (level.medium_dirt.isDirty(src)) {
         w4.draw.color_1 = .palette_3;
         w4.draw.color_2 = .palette_3;
 
-        var dx = x;
-        while (dx < x + tile_size) : (dx += 3) {
-            var dy = y;
-            while (dy < y + tile_size) : (dy += 3) {
+        var dx = x + 2;
+        while (dx < x + tile_size) : (dx += 2) {
+            var dy = y + 2;
+            while (dy < y + tile_size) : (dy += 2) {
                 w4.rect(dx, dy, 1, 1);
             }
         }
-    }
-
-    if (level.light_dirt.isDirty(src)) {
+    } else if (level.light_dirt.isDirty(src)) {
         w4.draw.color_1 = .palette_2;
         w4.draw.color_2 = .palette_2;
 
-        var dx = x;
+        var dx = x + 2;
         while (dx < x + tile_size) : (dx += 2) {
-            var dy = y;
+            var dy = y + 2;
             while (dy < y + tile_size) : (dy += 2) {
                 w4.rect(dx, dy, 1, 1);
             }
