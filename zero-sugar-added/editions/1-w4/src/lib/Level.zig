@@ -138,8 +138,12 @@ pub fn draw(level: Level) void {
                 .dirty_light,
                 .dirty_medium,
                 .dirty_hectic,
-                => drawDirtyTile(pos, kind),
-                else => {},
+                => {
+                    drawCleanTile(pos); // Clean under the dirt...
+                    drawDirtyTile(pos, kind);
+                },
+                .clean => drawCleanTile(pos),
+                .none => {},
             }
 
             if (kind.isWall()) {
@@ -209,6 +213,27 @@ pub fn draw(level: Level) void {
     }
 }
 
+fn drawCleanTile(src: TilePos) void {
+    defer w4.draw.color_1 = .palette_1;
+    defer w4.draw.color_2 = .palette_2;
+
+    const x, const y = src.toXy();
+    {
+        w4.draw.color_1 = .palette_1;
+        w4.draw.color_2 = .palette_2;
+
+        w4.rect(x, y, tile_size + 1, tile_size + 1);
+    }
+    //     var dx = x;
+    //     while (dx < x + tile_size) : (dx += 4) {
+    //         var dy = y;
+    //         while (dy < y + tile_size) : (dy += 4) {
+    //             w4.rect(dx, dy, 4, 4);
+    //         }
+    //     }
+    // }
+}
+
 fn drawDirtyTile(src: TilePos, kind: TileKind) void {
     defer w4.draw.color_1 = .palette_1;
     defer w4.draw.color_2 = .palette_2;
@@ -219,16 +244,25 @@ fn drawDirtyTile(src: TilePos, kind: TileKind) void {
             w4.draw.color_1 = .palette_2;
             w4.draw.color_2 = .palette_2;
 
-            w4.oval(x + 3, y + 4, 5, 4);
-            w4.oval(x + 9, y + 10, 4, 3);
+            var dx = x;
+            while (dx < x + tile_size) : (dx += 2) {
+                var dy = y;
+                while (dy < y + tile_size) : (dy += 2) {
+                    w4.rect(dx, dy, 1, 1);
+                }
+            }
         },
         .dirty_medium => {
             w4.draw.color_1 = .palette_3;
             w4.draw.color_2 = .palette_3;
 
-            w4.oval(x + 2, y + 3, 6, 5);
-            w4.oval(x + 9, y + 2, 5, 4);
-            w4.oval(x + 7, y + 10, 7, 4);
+            var dx = x;
+            while (dx < x + tile_size) : (dx += 3) {
+                var dy = y;
+                while (dy < y + tile_size) : (dy += 3) {
+                    w4.rect(dx, dy, 1, 1);
+                }
+            }
 
             drawDirtyTile(src, .dirty_light);
         },
@@ -236,10 +270,13 @@ fn drawDirtyTile(src: TilePos, kind: TileKind) void {
             w4.draw.color_1 = .palette_4;
             w4.draw.color_2 = .palette_4;
 
-            w4.oval(x + 1, y + 2, 7, 6);
-            w4.oval(x + 8, y + 1, 2, 3);
-            w4.oval(x + 3, y + 9, 2, 2);
-            w4.oval(x + 10, y + 8, 5, 6);
+            var dx = x;
+            while (dx < x + tile_size) : (dx += 4) {
+                var dy = y;
+                while (dy < y + tile_size) : (dy += 4) {
+                    w4.rect(dx, dy, 1, 1);
+                }
+            }
 
             drawDirtyTile(src, .dirty_medium);
         },
