@@ -56,14 +56,14 @@ fn update(game: *Game) void {
 
     switch (game.state) {
         .reset => {
-            game.playMusic();
+            game.playMenuMusic();
             game.frame = 0;
             game.menu_banner_y = -assets.banner_height;
             game.menu_cleaner_x_offset = 0;
             game.state = .menu;
         },
         .menu => {
-            game.playMusic();
+            game.playMenuMusic();
 
             if (game.input.pressed.button_1) {
                 game.state = .{ .level_start = 0 };
@@ -76,7 +76,7 @@ fn update(game: *Game) void {
                 game.menu_banner_y += 1;
         },
         .running => {
-            game.playMusic();
+            game.playRunningMusic();
             game.remaining_time_seconds -= 1.0 / 60.0;
             if (game.remaining_time_seconds <= 0) {
                 game.state = .{
@@ -130,11 +130,11 @@ fn update(game: *Game) void {
             }
 
             if (game.active_level.?.isComplete()) {
-                game.state = .level_complete;
+                game.state = .{ .level_complete = .{} };
             }
         },
         .level_start => |level_idx| {
-            game.playMusic();
+            game.playRunningMusic();
             game.level_index = level_idx;
             game.active_level = levels.all[game.level_index];
             game.remaining_time_seconds += game.active_level.?.allowed_seconds;
@@ -145,7 +145,7 @@ fn update(game: *Game) void {
             game.state = .running;
         },
         .level_complete => {
-            game.playMusic();
+            game.playLevelCompleteMusicOnce();
             if (game.input.pressed.button_1) {
                 game.state = .{ .level_start = game.level_index + 1 };
             }
@@ -160,7 +160,101 @@ fn update(game: *Game) void {
     }
 }
 
-fn playMusic(game: *const Game) void {
+fn playLevelCompleteMusicOnce(game: *Game) void {
+    std.debug.assert(game.state == .level_complete);
+
+    if (game.state.level_complete.level_complete_frame > 54) return;
+    game.state.level_complete.level_complete_frame += 1;
+
+    const melody_volume = w4.Volume.flat(18);
+    const harmony_volume = w4.Volume.flat(12);
+    const bass_volume = w4.Volume.flat(24);
+    const short_note = w4.Adsr{
+        .sustain = 5,
+        .release = 3,
+    };
+    const long_note = w4.Adsr{
+        .sustain = 22,
+        .release = 14,
+    };
+
+    switch (game.state.level_complete.level_complete_frame) {
+        1 => {
+            w4.toneNote(60, 0, short_note, melody_volume, .{
+                .channel = .pulse_1,
+                .duty_cycle = .quarter,
+            });
+            w4.toneNote(48, 0, w4.Adsr.gated(8), bass_volume, .{
+                .channel = .triangle,
+            });
+        },
+        7 => {
+            w4.toneNote(64, 0, short_note, melody_volume, .{
+                .channel = .pulse_1,
+                .duty_cycle = .quarter,
+            });
+        },
+        13 => {
+            w4.toneNote(67, 0, short_note, melody_volume, .{
+                .channel = .pulse_1,
+                .duty_cycle = .quarter,
+            });
+            w4.toneNote(52, 0, w4.Adsr.gated(8), bass_volume, .{
+                .channel = .triangle,
+            });
+        },
+        21 => {
+            w4.toneNote(72, 0, short_note, melody_volume, .{
+                .channel = .pulse_1,
+                .duty_cycle = .half,
+            });
+            w4.toneNote(67, 0, short_note, harmony_volume, .{
+                .channel = .pulse_2,
+                .duty_cycle = .quarter,
+            });
+        },
+        31 => {
+            w4.toneNote(76, 0, long_note, melody_volume, .{
+                .channel = .pulse_1,
+                .duty_cycle = .half,
+            });
+            w4.toneNote(72, 0, long_note, harmony_volume, .{
+                .channel = .pulse_2,
+                .duty_cycle = .half,
+            });
+            w4.toneNote(48, 0, long_note, bass_volume, .{
+                .channel = .triangle,
+            });
+        },
+        else => {},
+    }
+}
+
+// Just menu music with just bass, could do something smarter but good enough for a jam
+fn playRunningMusic(game: *const Game) void {
+    const bass_volume = w4.Volume.flat(28);
+
+    switch (game.frame % 80) {
+        10 => {
+            w4.toneNote(48, 0, w4.Adsr.gated(8), bass_volume, .{
+                .channel = .triangle,
+            });
+        },
+        40 => {
+            w4.toneNote(55, 0, w4.Adsr.gated(8), bass_volume, .{
+                .channel = .triangle,
+            });
+        },
+        60 => {
+            w4.toneNote(53, 0, w4.Adsr.gated(8), bass_volume, .{
+                .channel = .triangle,
+            });
+        },
+        else => {},
+    }
+}
+
+fn playMenuMusic(game: *const Game) void {
     const note_duration = w4.Adsr{
         .sustain = 6,
         .release = 3,
@@ -399,7 +493,9 @@ fn draw(game: *const Game) void {
 const State = union(enum) {
     menu,
     running,
-    level_complete,
+    level_complete: struct {
+        level_complete_frame: u8 = 0,
+    },
     reset,
     level_start: LevelIndex,
     game_over: struct {
