@@ -508,6 +508,17 @@ fn draw(game: *const Game) void {
 
             w4.text(level, 38, 72);
             w4.text(tiles, 18, 88);
+
+            // every half second blink
+            if (game.frame % 60 <= 30) {
+                w4.draw.color_1 = .palette_1;
+                w4.draw.color_2 = .palette_4;
+                defer {
+                    w4.draw.color_1 = .palette_1;
+                    w4.draw.color_2 = .palette_2;
+                }
+                w4.text("Press X to continue", 4, 120);
+            }
         },
     }
 }
