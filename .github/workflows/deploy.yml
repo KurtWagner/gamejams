@@ -1,0 +1,75 @@
+name: Deploy website
+run-name: Deploy website
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy website from Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Pages
+        uses: actions/configure-pages@v5
+
+      - name: Set up Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          # Change to 0.17 when released.
+          version: master
+
+      - name: Install WASM-4
+        run: npm install --global wasm4
+
+      - name: Build game page
+        working-directory: zero-sugar-added/editions/1-w4
+        run: zig build deploy
+
+      - name: Build site artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          site_out="$RUNNER_TEMP/website"
+          game_one_out="$site_out/zero-sugar-added/editions/1-w4"
+
+          rm -rf "$site_out"
+          cp -R website "$site_out"
+
+          mkdir -p "$game_one_out"
+
+          cp \
+            zero-sugar-added/editions/1-w4/zig-out/deploy/index.html \
+            "$game_one_out/index.html"
+
+          cp \
+            zero-sugar-added/editions/1-w4/screenshot_menu.png \
+            zero-sugar-added/editions/1-w4/screenshot_level.png \
+            "$game_one_out/"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/website
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
