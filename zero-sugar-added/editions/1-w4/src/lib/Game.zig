@@ -10,6 +10,7 @@ input: Input,
 level_index: LevelIndex,
 player: Player,
 frame: u16,
+total_cleaned_count: u32 = 0,
 
 menu_cleaner_x_offset: u1 = 0,
 menu_banner_y: i32 = 0,
@@ -58,6 +59,7 @@ fn update(game: *Game) void {
         .reset => {
             game.playMenuMusic();
             game.frame = 0;
+            game.total_cleaned_count = 0;
             game.menu_banner_y = -assets.banner_height;
             game.menu_cleaner_x_offset = 0;
             game.state = .menu;
@@ -82,7 +84,6 @@ fn update(game: *Game) void {
                 game.state = .{
                     .game_over = .{
                         .max_level_reached = game.level_index + 1,
-                        .total_tiles_cleaned = 0, // TODO: implemenmt this
                     },
                 };
                 return;
@@ -116,6 +117,7 @@ fn update(game: *Game) void {
                 // Good job cleaning this tile
                 .enter_floor_tile => |pos| {
                     if (game.active_level.?.clean(pos)) {
+                        game.total_cleaned_count += 1;
                         w4.toneSlide(900, 240, .{
                             .sustain = 20,
                             .release = 20,
@@ -493,7 +495,7 @@ fn draw(game: *const Game) void {
             const tiles = std.fmt.bufPrint(
                 &tiles_text,
                 "Tiles Cleaned {d}",
-                .{stats.total_tiles_cleaned},
+                .{game.total_cleaned_count},
             ) catch unreachable;
 
             w4.draw.color_1 = .palette_1;
@@ -533,7 +535,6 @@ const State = union(enum) {
     level_start: LevelIndex,
     game_over: struct {
         max_level_reached: u8,
-        total_tiles_cleaned: u32,
         game_over_frame: u8 = 0,
     },
 };
