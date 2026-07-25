@@ -1,6 +1,5 @@
 const Game = @This();
 
-// TODO: Dont repeat this everywhere
 const tile_size = 16;
 
 const diag_multiplier: @Vector(2, f16) = @splat(0.7);
@@ -125,8 +124,6 @@ fn update(game: *Game) void {
                             .channel = .noise,
                         });
                     }
-
-                    // TODO: clean but needs copy of dirt
                 },
                 .none => {},
             }

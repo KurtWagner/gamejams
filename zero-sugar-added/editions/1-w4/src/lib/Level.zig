@@ -1,6 +1,5 @@
 const Level = @This();
 
-// TODO: Dont repeat this everywhere
 const tile_size = 16;
 pub const grid_size = 10;
 
@@ -137,7 +136,7 @@ pub fn parse(
     if (!has_start)
         @compileError("Level missing start");
 
-    // TODO: Make iterator for this? Duplicated in draw or who really caresfor a jam.
+    // If wasnt just a jam then would probably implement an iterator.
     row = 0;
     while (row < level.tiles.len) : (row += 1) {
         var col: u8 = 0;
