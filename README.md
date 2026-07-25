@@ -2,21 +2,25 @@
 
 Personal repo of some artifacts built during coding and game james
 
-### Zero Sugar Added
+## Zero Sugar Added
 
-#### Full Steam (Clean) Ahead
+More information about Zero Sugar Added can be found [here](https://codeberg.org/zero-sugar-added/jam).
 
-##### Theme
+### Full Steam (Clean) Ahead
+
+Written in [Zig](https://ziglang.org/) with [WASM-4](https://wasm4.org/).
+
+#### Theme
 
 > Full Steam Ahead
 
-##### Story
+#### Story
 
 Idea is that your job is to steam clean rooms but only have a limited time to
 do them. You're allocated extra time for each dirty tile but your boss is an
 asshole and doesn't care if the tile is lightly dirty (requires one pass) or epicly dirty (requires three passes).
 
-##### If I had more time
+#### If I had more time
 
 Would've been cool to try my hand at some angry boss pixel art and more animations and counters with companion sounds on the level complete pages (thinking like super mario land).
 
