@@ -7,3 +7,9 @@ Using zig and w4. Run with:
 ```shell
 zig build run
 ```
+
+Build the standalone web page with:
+
+```shell
+zig build deploy
+```

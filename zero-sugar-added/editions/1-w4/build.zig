@@ -61,6 +61,16 @@ pub fn build(b: *std.Build) !void {
 
     b.installArtifact(exe);
 
+    const bundle_html = b.addSystemCommand(&.{ w4, "bundle" });
+    bundle_html.addArtifactArg(exe);
+    bundle_html.addArgs(&.{ "--title", "Zero Sugar Added: Full Steam (Clean) Ahead" });
+    bundle_html.addArg("--html");
+    const html_file = bundle_html.addOutputFileArg("index.html");
+    const install_html = b.addInstallFileWithDir(html_file, .prefix, "deploy/index.html");
+
+    const step_deploy = b.step("deploy", "Build a standalone web page for the wasm4 cart");
+    step_deploy.dependOn(&install_html.step);
+
     const run_exe = b.addSystemCommand(&.{ w4, "run-native" });
     run_exe.addArtifactArg(exe);
 
