@@ -72,7 +72,7 @@ fn update(game: *Game) void {
             if (game.frame % 60 == 0)
                 game.menu_cleaner_x_offset +%= 1;
 
-            if (game.menu_banner_y < 10 and game.frame % 2 == 0)
+            if (game.menu_banner_y <= 0 and game.frame % 2 == 0)
                 game.menu_banner_y += 1;
         },
         .running => {
@@ -392,6 +392,17 @@ fn draw(game: *const Game) void {
                 assets.banner_height,
                 .{ .format = .bpp_2 },
             );
+
+            // every half second blink
+            if (game.frame % 60 <= 30) {
+                w4.draw.color_1 = .palette_4;
+                w4.draw.color_2 = .palette_1;
+                defer {
+                    w4.draw.color_1 = .palette_1;
+                    w4.draw.color_2 = .palette_2;
+                }
+                w4.text("Press X to start", 15, 55);
+            }
         },
         .running => {
             game.active_level.?.draw();
@@ -451,9 +462,20 @@ fn draw(game: *const Game) void {
                 },
             ) catch unreachable;
 
-            w4.text(level, 12, 72);
+            w4.text(level, 12, 68);
             w4.draw.color_1 = .palette_2;
-            w4.text(time, 45, 88);
+            w4.text(time, 45, 84);
+
+            // every half second blink
+            if (game.frame % 60 <= 30) {
+                w4.draw.color_1 = .palette_1;
+                w4.draw.color_2 = .palette_4;
+                defer {
+                    w4.draw.color_1 = .palette_1;
+                    w4.draw.color_2 = .palette_2;
+                }
+                w4.text("Press X to continue", 4, 120);
+            }
         },
         .level_start => {},
         .game_over => |stats| {
